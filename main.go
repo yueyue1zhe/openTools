@@ -49,6 +49,7 @@ func outPut(baseDir, pwdDir, preEnd, merge string) {
 	_ = os.Mkdir("../"+pwdDir+preEnd, os.ModePerm)
 	copyDir(codePath, outPath)
 	os.RemoveAll(outPath + `\.git`)
+	os.RemoveAll(outPath + `\.idea`)
 	os.RemoveAll(outPath + `\openTools.exe`)
 	files, err := ioutil.ReadDir(outPath + `\lib`)
 	if err != nil {
