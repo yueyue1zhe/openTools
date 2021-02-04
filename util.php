@@ -6,6 +6,8 @@
  * Date  : 2021/1/26
  */
 
+const ApiEntryKey = "yroute";
+const ApiScopeFrontend = "frontend";
 
 IModulesLoader::AppStart();
 class IModulesLoader{
@@ -15,6 +17,7 @@ class IModulesLoader{
     public static $vendorMap = [
         'service' => __DIR__ . DIRECTORY_SEPARATOR . 'service',
         'model' => __DIR__ . DIRECTORY_SEPARATOR . 'model',
+        ApiScopeFrontend => __DIR__ . DIRECTORY_SEPARATOR . ApiScopeFrontend,
     ];
     public static function autoload($class){
         $file = self::findFile($class);
@@ -36,6 +39,44 @@ class IModulesLoader{
 }
 
 class AppUtil{
+    private static function getMarRF($scope){
+        global $_GPC;
+        $space = current(explode("_",ModuleName));
+        $use = explode("/",ltrim($_GPC[ApiEntryKey],"/"));
+        $func = array_pop($use);
+        $use = $use ? "\\".implode("\\",$use) : "";
+        return [
+            "route" =>$space."\\".$scope.$use,
+            "func" => $func
+        ];
+    }
+    private static function setMarCors($allowOrigin){
+        if (!empty($allowOrigin)){
+            $origin = isset($_SERVER['HTTP_ORIGIN'])? $_SERVER['HTTP_ORIGIN'] : '';
+            if (in_array($origin,$allowOrigin)){
+                header("access-control-allow-headers: token,content-type");
+                header("access-control-allow-methods: post");
+                header("access-control-allow-origin: *");
+            }
+        }
+    }
+    public static function Mar($ApiScope,$allowOrigin=[]){
+        self::setMarCors($allowOrigin);
+        $cf = self::getMarRF($ApiScope);
+        if(!class_exists($cf["route"])){
+            self::ReqFail("内部错误:路由不存在");
+        }
+        $apiClass = new $cf["route"]();
+        if(!method_exists($apiClass, $cf["func"])){
+            self::ReqFail("内部错误:方法不存在");
+        }
+        $result = call_user_func_array([$apiClass, $cf["func"]], []);
+        if(is_error($result)){
+            self::ReqFail($result["message"],$result["errno"]);
+        }
+        self::ReqOk($result);
+    }
+
     public static function MakeQrCode2Show($content){
         require_once IA_ROOT . "/addons/".ModuleName."/lib/exter/phpqrcode.php";
         QRcode::png($content,false,QR_ECLEVEL_H,12,1);
