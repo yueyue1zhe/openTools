@@ -38,8 +38,47 @@ class IModulesLoader{
     }
 }
 
+class BaseController{
+
+    protected $token;
+    protected $api_scope;
+    protected $api_judge_si = true;
+    protected $auth_route = true;
+    protected $post;
+
+    public function __construct() {
+        global $_GPC;
+        $this->post = $_GPC["__input"];
+        if (!$this->auth_route)return;
+        $token = AppUtil::visitToken();
+        if (empty($token) || is_error($token))AppUtil::ReqLoginFail($token["message"] ?: "token无效");
+        if ($this->api_judge_si)$this->token_judge_si($token);
+        $this->token = $token;
+    }
+
+    protected function token_award($data, $jwtUuid){
+        return \Jwt::awardToken($data,$this->api_scope,$jwtUuid);
+    }
+    protected function token_judge_j(){if (empty($this->token))return;}
+    private function token_judge_si($token){
+        if (empty($token)){
+            AppUtil::ReqLoginFail("token无效");
+        }
+        $origin = isset($_SERVER['HTTP_ORIGIN'])? $_SERVER['HTTP_ORIGIN'] : '';
+        if (!empty($token["sub"]) && $origin != $token["sub"]){
+            AppUtil::ReqLoginFail("非授权域");
+        }
+        if ($token["iss"] != $this->api_scope){
+            AppUtil::ReqLoginFail("权限异常");
+        }
+    }
+}
+
 class AppUtil{
-    private static function getMarRF($scope){
+    public static function visitToken(){
+        return Jwt::verifyToken($_SERVER['HTTP_TOKEN']);
+    }
+    public static function getMarRF($scope){
         global $_GPC;
         $space = current(explode("_",ModuleName));
         $use = explode("/",ltrim($_GPC[ApiEntryKey],"/"));
@@ -51,35 +90,36 @@ class AppUtil{
         ];
     }
     private static function setMarCors($allowOrigin){
+        if ($_SERVER['REQUEST_METHOD'] == 'GET')exit();
         if (!empty($allowOrigin)){
             $origin = isset($_SERVER['HTTP_ORIGIN'])? $_SERVER['HTTP_ORIGIN'] : '';
             if (in_array($origin,$allowOrigin)){
+                header("Content-Type: application/json");
                 header("access-control-allow-headers: token,content-type");
-                header("access-control-allow-methods: post");
-                header("access-control-allow-origin: *");
+                header("access-control-allow-methods: POST");
+                header("access-control-allow-origin: {$origin}");
             }
         }
+        if ('POST' != $_SERVER['REQUEST_METHOD'])exit();
+        if (!isset($_SERVER['REQUEST_METHOD']))exit();
     }
     public static function Mar($ApiScope,$allowOrigin=[]){
         self::setMarCors($allowOrigin);
         $cf = self::getMarRF($ApiScope);
-        if(!class_exists($cf["route"])){
-            self::ReqFail("内部错误:路由不存在");
-        }
-        $apiClass = new $cf["route"]();
-        if(!method_exists($apiClass, $cf["func"])){
-            self::ReqFail("内部错误:方法不存在");
-        }
+        if(!class_exists($cf["route"]))self::ReqFail("内部错误:路由不存在");
+        $apiClass = new $cf["route"]($cf);
+        if(!method_exists($apiClass, $cf["func"]))self::ReqFail("内部错误:方法不存在");
         $result = call_user_func_array([$apiClass, $cf["func"]], []);
-        if(is_error($result)){
-            self::ReqFail($result["message"],$result["errno"]);
-        }
+        if(is_error($result))self::ReqFail($result["message"],$result["errno"]);
         self::ReqOk($result);
     }
 
     public static function MakeQrCode2Show($content){
         require_once IA_ROOT . "/addons/".ModuleName."/lib/exter/phpqrcode.php";
         QRcode::png($content,false,QR_ECLEVEL_H,12,1);
+    }
+    public static function ReqLoginFail($message,$errno=40019){
+        self::Req("",$message,$errno);
     }
     public static function ReqOk($data){
         self::Req($data,"",0);
@@ -88,22 +128,435 @@ class AppUtil{
         self::Req("",$message,$errno);
     }
     public static function Req($data,$message,$errno){
-        echo json_encode([
-            "data" => $data,
-            "message" => $message,
-            "errno" => $errno
-        ]);
+        echo json_encode(["data" => $data,"message" => $message,"errno" => $errno]);
         exit();
     }
     public static function UrlIsImage($url){
         return !empty($url) && stripos(get_headers($url)[1],"image") !== false;
     }
-    public static function FastModulePathBase($path){
-        return IA_ROOT.DIRECTORY_SEPARATOR."addons".DIRECTORY_SEPARATOR.ModuleName.$path;
+
+}
+
+class Jwt {
+
+    //头部
+    private static $header=array(
+        'alg'=>'HS256', //生成signature的算法
+        'typ'=>'JWT'    //类型
+    );
+
+    //使用HMAC生成信息摘要时所使用的密钥
+    private static $key='123456BBACDDFzasedCC';
+
+    public static function jwtUuid(){
+        return md5(uniqid('JWT').time());
+    }
+    public static function awardToken($data,$iss,$jwtUuid="",$exp=7200,$sub=""){
+        $payload = array(
+            'data'=> $data,
+            'iss'=>$iss,
+            'iat'=>time(),
+            'exp'=>time()+$exp,
+            'nbf'=>time(),
+            'sub'=> $sub ? $sub : isset($_SERVER['HTTP_ORIGIN'])? $_SERVER['HTTP_ORIGIN'] : '',
+            'jti'=> $jwtUuid ? $jwtUuid : self::jwtUuid()
+        );
+        return \Jwt::getToken($payload);
+    }
+
+    /**
+     * 获取jwt token
+     * @param array $payload jwt载荷   格式如下非必须
+     * [
+     *  'iss'=>'jwt_admin',  //该JWT的签发者
+     *  'iat'=>time(),  //签发时间
+     *  'exp'=>time()+7200,  //过期时间
+     *  'nbf'=>time()+60,  //该时间之前不接收处理该Token
+     *  'sub'=>'www.admin.com',  //面向的用户
+     *  'jti'=>md5(uniqid('JWT').time())  //该Token唯一标识
+     * ]
+     * @return bool|string
+     */
+    public static function getToken($payload)
+    {
+        if(is_array($payload))
+        {
+            $base64header=self::base64UrlEncode(json_encode(self::$header,JSON_UNESCAPED_UNICODE));
+            $base64payload=self::base64UrlEncode(json_encode($payload,JSON_UNESCAPED_UNICODE));
+            $token=$base64header.'.'.$base64payload.'.'.self::signature($base64header.'.'.$base64payload,self::$key,self::$header['alg']);
+            return $token;
+        }else{
+            return false;
+        }
+    }
+
+
+    /**
+     * 验证token是否有效,默认验证exp,nbf,iat时间
+     * @param string $Token 需要验证的token
+     * @return bool|string
+     */
+    public static function verifyToken($Token)
+    {
+        $tokens = explode('.', $Token);
+        if (count($tokens) != 3)
+            return false;
+
+        list($base64header, $base64payload, $sign) = $tokens;
+
+        //获取jwt算法
+        $base64decodeheader = json_decode(self::base64UrlDecode($base64header), JSON_OBJECT_AS_ARRAY);
+        if (empty($base64decodeheader['alg']))
+            return false;
+
+        //签名验证
+        if (self::signature($base64header . '.' . $base64payload, self::$key, $base64decodeheader['alg']) !== $sign)
+            return false;
+
+        $payload = json_decode(self::base64UrlDecode($base64payload), JSON_OBJECT_AS_ARRAY);
+
+        //签发时间大于当前服务器时间验证失败
+        if (isset($payload['iat']) && $payload['iat'] > time())
+            return false;
+
+        //过期时间小宇当前服务器时间验证失败
+        if (isset($payload['exp']) && $payload['exp'] < time())
+            return false;
+
+        //该nbf时间之前不接收处理该Token
+        if (isset($payload['nbf']) && $payload['nbf'] > time())
+            return false;
+
+        return $payload;
+    }
+
+
+
+
+    /**
+     * base64UrlEncode   https://jwt.io/  中base64UrlEncode编码实现
+     * @param string $input 需要编码的字符串
+     * @return string
+     */
+    private static function base64UrlEncode($input)
+    {
+        return str_replace('=', '', strtr(base64_encode($input), '+/', '-_'));
+    }
+
+    /**
+     * base64UrlEncode  https://jwt.io/  中base64UrlEncode解码实现
+     * @param string $input 需要解码的字符串
+     * @return bool|string
+     */
+    private static function base64UrlDecode($input)
+    {
+        $remainder = strlen($input) % 4;
+        if ($remainder) {
+            $addlen = 4 - $remainder;
+            $input .= str_repeat('=', $addlen);
+        }
+        return base64_decode(strtr($input, '-_', '+/'));
+    }
+
+    /**
+     * HMACSHA256签名   https://jwt.io/  中HMACSHA256签名实现
+     * @param string $input 为base64UrlEncode(header).".".base64UrlEncode(payload)
+     * @param string $key
+     * @param string $alg   算法方式
+     * @return mixed
+     */
+    private static function signature($input, $key, $alg = 'HS256')
+    {
+        $alg_config=array(
+            'HS256'=>'sha256'
+        );
+        return self::base64UrlEncode(hash_hmac($alg_config[$alg], $input, $key,true));
+    }
+}
+
+class W7DBBase extends We7Table {
+    public function __construct() {
+        parent::__construct();
+    }
+    public function Uniacid(){
+        global $_W;
+        $this->query->where("uniacid",$_W["uniacid"]);
+        return $this;
+    }
+    public function ById($id){
+        global $_W;
+        return $this->getById($id,$_W["uniacid"]);
     }
 }
 
 class W7Util{
+
+    public static function GetWxJsSdkCfg($url=""){
+        $account_api = WeAccount::create();
+        return $account_api->getJssdkConfig($url);
+    }
+
+    public static function WxCode2FansInfo($code){
+        $oauth_account = \WeAccount::createByUniacid();
+        $oauth = $oauth_account->getOauthInfo($code);
+        if (is_error($oauth)){
+            return $oauth;
+        }
+        self::wxCode2FansInfoSync($oauth_account,$oauth);
+        return mc_fansinfo($oauth["openid"]);
+    }
+    private static function wxCode2FansInfoSync($oauth_account,$oauth){
+        global $_W;
+        $scope = $oauth["scope"];
+        if (intval($_W['account']['level']) == ACCOUNT_SERVICE_VERIFY) {
+            $fan = mc_fansinfo($oauth['openid']);
+            if (!empty($fan)) {
+                $_SESSION['openid'] = $oauth['openid'];
+                if (empty($_SESSION['uid'])) {
+                    if (!empty($fan['uid'])) {
+                        $member = mc_fetch($fan['uid'], array('uid'));
+                        if (!empty($member) && $member['uniacid'] == $_W['uniacid']) {
+                            $_SESSION['uid'] = $member['uid'];
+                        }
+                    }
+                }
+            } else {
+                $accObj = WeAccount::createByUniacid($_W['uniacid']);
+                $userinfo = $accObj->fansQueryInfo($oauth['openid']);
+
+                if(!is_error($userinfo) && !empty($userinfo) && !empty($userinfo['subscribe'])) {
+                    $userinfo['nickname'] = stripcslashes($userinfo['nickname']);
+                    $userinfo['avatar'] = $userinfo['headimgurl'];
+                    $_SESSION['userinfo'] = base64_encode(iserializer($userinfo));
+                    $record = array(
+                        'openid' => $userinfo['openid'],
+                        'uid' => 0,
+                        'acid' => $_W['acid'],
+                        'uniacid' => $_W['uniacid'],
+                        'salt' => random(8),
+                        'updatetime' => TIMESTAMP,
+                        'nickname' => stripslashes($userinfo['nickname']),
+                        'follow' => $userinfo['subscribe'],
+                        'followtime' => $userinfo['subscribe_time'],
+                        'unfollowtime' => 0,
+                        'unionid' => $userinfo['unionid'],
+                        'tag' => base64_encode(iserializer($userinfo)),
+                        'user_from' => $_W['account']->typeSign == 'wxapp' ? 1 : 0,
+                    );
+
+                    if (!isset($unisetting['passport']) || empty($unisetting['passport']['focusreg'])) {
+                        $email = md5($oauth['openid']).'@we7.cc';
+                        $email_exists_member = table('mc_members')
+                            ->where(array(
+                                'email' => $email,
+                                'uniacid' => $_W['uniacid']
+                            ))
+                            ->getcolumn('uid');
+                        if (!empty($email_exists_member)) {
+                            $uid = $email_exists_member;
+                        } else {
+                            $default_groupid = table('mc_groups')
+                                ->where(array(
+                                    'uniacid' => $_W['uniacid'],
+                                    'isdefault' => 1
+                                ))
+                                ->getcolumn('groupid');
+                            $data = array(
+                                'uniacid' => $_W['uniacid'],
+                                'email' => $email,
+                                'salt' => random(8),
+                                'groupid' => $default_groupid,
+                                'createtime' => TIMESTAMP,
+                                'password' => md5($message['from'] . $data['salt'] . $_W['config']['setting']['authkey']),
+                                'nickname' => stripslashes($userinfo['nickname']),
+                                'avatar' => $userinfo['headimgurl'],
+                                'gender' => $userinfo['sex'],
+                                'nationality' => $userinfo['country'],
+                                'resideprovince' => $userinfo['province'] . '省',
+                                'residecity' => $userinfo['city'] . '市',
+                            );
+                            table('mc_members')->fill($data)->save();
+                            $uid = pdo_insertid();
+                        }
+                        $record['uid'] = $uid;
+                        $_SESSION['uid'] = $uid;
+                    }
+                    table('mc_mapping_fans')->fill($record)->save();
+                    $mc_fans_tag_table = table('mc_fans_tag');
+                    $mc_fans_tag_fields = mc_fans_tag_fields();
+                    $fans_tag_update_info = array();
+                    foreach ($userinfo as $fans_field_key => $fans_field_info) {
+                        if (in_array($fans_field_key, array_keys($mc_fans_tag_fields))) {
+                            $fans_tag_update_info[$fans_field_key] = $fans_field_info;
+                        }
+                        $fans_tag_update_info['tagid_list'] = iserializer($fans_tag_update_info['tagis_list']);
+                    }
+                    $fans_tag_exists = $mc_fans_tag_table->getByOpenid($fans_tag_update_info['openid']);
+                    if (!empty($fans_tag_exists)) {
+                        table('mc_fans_tag')
+                            ->where(array('openid' => $fans_tag_update_info['openid']))
+                            ->fill($fans_tag_update_info)
+                            ->save();
+                    } else {
+                        table('mc_fans_tag')->fill($fans_tag_update_info)->save();
+                    }
+                } else {
+                    $record = array(
+                        'openid' => $oauth['openid'],
+                        'nickname' => '',
+                        'subscribe' => '0',
+                        'subscribe_time' => '',
+                        'headimgurl' => '',
+                    );
+                }
+                $_SESSION['openid'] = $oauth['openid'];
+                $_W['fans'] = $record;
+                $_W['fans']['from_user'] = $record['openid'];
+            }
+        }
+        if (intval($_W['account']['level']) != ACCOUNT_SERVICE_VERIFY) {
+            $mc_oauth_fan = mc_oauth_fans($oauth['openid'], $_W['uniacid']);
+            if (empty($mc_oauth_fan)) {
+                $data = array(
+                    'uniacid' => $_W['uniacid'],
+                    'oauth_openid' => $oauth['openid'],
+                    'uid' => intval($_SESSION['uid']),
+                    'openid' => $_SESSION['openid']
+                );
+                table('mc_oauth_fans')->fill($data)->save();
+            }
+            //如果包含Unionid，则直接查原始openid
+            if (!empty($oauth['unionid'])) {
+                $fan = table('mc_mapping_fans')
+                    ->searchWithUnionid($oauth['unionid'])
+                    ->searchWithUniacid($_W['uniacid'])
+                    ->get();
+                if (!empty($fan)) {
+                    if (!empty($fan['uid'])) {
+                        $_SESSION['uid'] = intval($fan['uid']);
+                    }
+                    if (!empty($fan['openid'])) {
+                        $_SESSION['openid'] = strval($fan['openid']);
+                    }
+                }
+            } else {
+                if (!empty($mc_oauth_fan)) {
+                    if (empty($_SESSION['uid']) && !empty($mc_oauth_fan['uid'])) {
+                        $_SESSION['uid'] = intval($mc_oauth_fan['uid']);
+                    }
+                    if (empty($_SESSION['openid']) && !empty($mc_oauth_fan['openid'])) {
+                        $_SESSION['openid'] = strval($mc_oauth_fan['openid']);
+                    }
+                }
+            }
+        }
+        if ($scope == 'userinfo' || $scope == 'snsapi_userinfo') {
+            $userinfo = $oauth_account->getOauthUserInfo($oauth['access_token'], $oauth['openid']);
+            if (!is_error($userinfo)) {
+                $userinfo['nickname'] = stripcslashes($userinfo['nickname']);
+                $userinfo['avatar'] = $userinfo['headimgurl'];
+                $_SESSION['userinfo'] = base64_encode(iserializer($userinfo));
+                $fan = table('mc_mapping_fans')->searchWithOpenid($oauth['openid'])->searchWithUniacid($_W['uniacid'])->get();
+                if (!empty($fan)) {
+                    $record = array();
+                    $record['updatetime'] = TIMESTAMP;
+                    $record['nickname'] = stripslashes($userinfo['nickname']);
+                    $record['tag'] = base64_encode(iserializer($userinfo));
+                    if (empty($fan['unionid'])) {
+                        $record['unionid'] = !empty($userinfo['unionid']) ? $userinfo['unionid'] : '';
+                    }
+                    table('mc_mapping_fans')
+                        ->where(array(
+                            'openid' => $fan['openid'],
+                            'uniacid' => $_W['uniacid']
+                        ))
+                        ->fill($record)
+                        ->save();
+                    if (!empty($fan['uid']) || !empty($_SESSION['uid'])) {
+                        $uid = $fan['uid'];
+                        if(empty($uid)){
+                            $uid = $_SESSION['uid'];
+                        }
+                        $user = mc_fetch($uid, array('nickname', 'gender', 'residecity', 'resideprovince', 'nationality', 'avatar'));
+                        $record = array();
+                        if(empty($user['nickname']) && !empty($userinfo['nickname'])) {
+                            $record['nickname'] = stripslashes($userinfo['nickname']);
+                        }
+                        if(empty($user['gender']) && !empty($userinfo['sex'])) {
+                            $record['gender'] = $userinfo['sex'];
+                        }
+                        if(empty($user['residecity']) && !empty($userinfo['city'])) {
+                            $record['residecity'] = $userinfo['city'] . '市';
+                        }
+                        if(empty($user['resideprovince']) && !empty($userinfo['province'])) {
+                            $record['resideprovince'] = $userinfo['province'] . '省';
+                        }
+                        if(empty($user['nationality']) && !empty($userinfo['country'])) {
+                            $record['nationality'] = $userinfo['country'];
+                        }
+                        if(empty($user['avatar']) && !empty($userinfo['headimgurl'])) {
+                            $record['avatar'] = $userinfo['headimgurl'];
+                        }
+                        if(!empty($record)) {
+                            mc_update($user['uid'], $record);
+                        }
+                    }
+                } else {
+                    $record = array(
+                        'openid' => $oauth['openid'],
+                        'uid' => 0,
+                        'acid' => $_W['acid'],
+                        'uniacid' => $_W['uniacid'],
+                        'salt' => random(8),
+                        'updatetime' => TIMESTAMP,
+                        'nickname' => $userinfo['nickname'],
+                        'follow' => 0,
+                        'followtime' => 0,
+                        'unfollowtime' => 0,
+                        'tag' => base64_encode(iserializer($userinfo)),
+                        'unionid' => !empty($userinfo['unionid']) ? $userinfo['unionid'] : '',
+                        'user_from' => $_W['account']->typeSign == 'wxapp' ? 1 : 0,
+                    );
+
+                    if (!isset($unisetting['passport']) || empty($unisetting['passport']['focusreg'])) {
+                        $default_groupid = table('mc_groups')
+                            ->where(array(
+                                'uniacid' => $_W['uniacid'],
+                                'isdefault' => 1
+                            ))
+                            ->getcolumn('groupid');
+                        $data = array(
+                            'uniacid' => $_W['uniacid'],
+                            'email' => md5($oauth['openid']).'@we7.cc',
+                            'salt' => random(8),
+                            'groupid' => $default_groupid,
+                            'createtime' => TIMESTAMP,
+                            'password' => md5($message['from'] . $data['salt'] . $_W['config']['setting']['authkey']),
+                            'nickname' => $userinfo['nickname'],
+                            'avatar' => $userinfo['headimgurl'],
+                            'gender' => $userinfo['sex'],
+                            'nationality' => $userinfo['country'],
+                            'resideprovince' => $userinfo['province'] . '省',
+                            'residecity' => $userinfo['city'] . '市',
+                        );
+                        table('mc_members')
+                            ->fill($data)
+                            ->save();
+                        $uid = pdo_insertid();
+                        $record['uid'] = $uid;
+                        $_SESSION['uid'] = $uid;
+                    }
+                    table('mc_mapping_fans')->fill($record)->save();
+                }
+            } else {
+                //                message('微信授权获取用户信息失败,错误信息为: ' . $response['message']);
+            }
+        }
+    }
+
+    public static function FastModulePathBase($path){
+        return IA_ROOT.DIRECTORY_SEPARATOR."addons".DIRECTORY_SEPARATOR.ModuleName.$path;
+    }
     public static function uploadRemoteFile($filePath,$filename,$auto_delete_local=true){
         global $_W;
         if (empty($_W['setting']['remote']['type'])) {
