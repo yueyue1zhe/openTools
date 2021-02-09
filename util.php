@@ -287,9 +287,31 @@ class W7DBBase extends We7Table {
         global $_W;
         return $this->getById($id,$_W["uniacid"]);
     }
+    public function WhereId($id){
+        $this->query->where("id",$id);
+        return $this;
+    }
 }
 
 class W7Util{
+
+    public static function CoreModuleSitePay($fee,$tid,$title){
+        $_POST["module"] = ModuleName;
+        $_POST["method"] = "wechat";
+        $_POST["fee"] = $fee;
+        $_POST["tid"] = $tid;
+        $_POST["title"] = $title;
+        $site = WeUtility::createModuleSite("core");
+        $site->doMobilePay();
+    }
+
+    public static function InitGlobal($openid){
+        global $_W;
+        $_W['openid'] = $openid;
+        $_W['fans'] = mc_fansinfo($_W['openid']);
+        $_W['fans']['from_user'] = $_W['fans']['openid'] = $_W['openid'];
+        $_W['member'] = mc_fetch($_W['openid']);
+    }
 
     public static function GetWxJsSdkCfg($url=""){
         $account_api = WeAccount::create();
