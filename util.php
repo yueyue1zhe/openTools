@@ -128,13 +128,23 @@ class AppUtil{
         self::Req("",$message,$errno);
     }
     public static function Req($data,$message,$errno){
+        header("Content-Type: application/json; charset=utf-8");
         echo json_encode(["data" => $data,"message" => $message,"errno" => $errno]);
         exit();
     }
     public static function UrlIsImage($url){
         return !empty($url) && stripos(get_headers($url)[1],"image") !== false;
     }
-
+    public static function FillFieldStruct($data,$struct){
+        $new = [];
+        foreach ($data as $k => $v){if (in_array($k,$struct))$new[$k] = $v;}
+        return $new;
+    }
+    public static function Emoji2Str($value,$re="*"){
+        $value = json_encode($value);
+        $value = preg_replace("/\\\u[ed][0-9a-f]{3}\\\u[ed][0-9a-f]{3}/",$re,$value);
+        return json_decode($value);
+    }
 }
 
 class Jwt {
@@ -283,10 +293,14 @@ class W7DBBase extends We7Table {
         $this->query->where("uniacid",$_W["uniacid"]);
         return $this;
     }
-    public function ById($id){
+    public function ByIdWithUniacid($id){
         global $_W;
         return $this->getById($id,$_W["uniacid"]);
     }
+    public function FillTableField($param) {
+        return AppUtil::FillFieldStruct($param,$this->field);
+    }
+
     public function WhereId($id){
         $this->query->where("id",$id);
         return $this;
@@ -294,6 +308,167 @@ class W7DBBase extends We7Table {
 }
 
 class W7Util{
+
+    public static function CheckKeyWord($content,$type,$status=1,$displayOrder=1,$moduleName=ModuleName){
+        global $_W;
+        return pdo_get("rule_keyword",array(
+            "uniacid" => $_W["uniacid"],
+            "module" => $moduleName,
+            "content" => $content,
+            "type" => $type,
+            "displayorder" =>$displayOrder,
+            "status" =>$status
+        ));
+    }
+
+    /**
+     * 微擎关键字清理
+     * @param string $keyword 关键字内容
+     * @param string $module_name 模块名称
+     */
+    public static function ClearKeyWord($keyword,$module_name=ModuleName){
+        global $_W;
+        $key = pdo_get("rule_keyword",array(
+            "uniacid" => $_W["uniacid"],
+            "module" => $module_name,
+            "content" => $keyword
+        ));
+        if (!empty($key)){
+            pdo_delete("rule_keyword",["id"=>$key["id"]]);
+            $rule = pdo_get("rule",[
+                'id' => $key["rid"],
+                'uniacid' => $_W['uniacid'],
+                'module' => $module_name
+            ]);
+            if(!empty($rule)){
+                pdo_delete("rule",["id"=>$rule["id"]]);
+            }
+        }
+    }
+    /**
+     * 微擎关键字创建
+     * @param string $keyword 关键字文本
+     * @param string $module_name 模块名称
+     * @param int $type 1精准2包含3正则
+     * @param int $status 1开启 0关闭
+     * @param int $displayOrder 优先级
+     */
+    public static function FetchKeyWord($keyword,$type=1,$status=1,$displayOrder=1,$module_name=ModuleName){
+        global $_W;
+        $key = pdo_get("rule_keyword",array(
+            "uniacid" => $_W["uniacid"],
+            "module" => $module_name,
+            "content" => $keyword,
+            "type" => $type,
+            "displayorder" =>$displayOrder,
+            "status" =>$status
+        ));
+        if (empty($key)){
+            $rule = pdo_get("rule",['name'=>$keyword,'uniacid' => $_W['uniacid'],'module' => $module_name]);
+            if(!empty($rule)){
+                $rid = $rule["id"];
+            }else{
+                $rid = pdo_insert("rule",[
+                    'uniacid' => $_W["uniacid"],
+                    'name' => $keyword,
+                    'module' => $module_name,
+                    'displayorder'=>$displayOrder,
+                    'status' => $status
+                ]);
+            }
+            pdo_insert("rule_keyword",array(
+                "rid" => $rid,
+                "uniacid" => $_W["uniacid"],
+                "module" => $module_name,
+                "content" => $keyword,
+                "type" => $type,
+                "displayorder" =>$displayOrder,
+                "status" =>$status
+            ));
+        }
+    }
+
+    /**
+     * 搜索公众号粉丝
+     * @param $value
+     * @return mixed
+     */
+    public static function SearchFansFunc($value){
+        $value = trim($value);
+        if (empty($value))return error(1,"搜索条件不能为空");
+        $fans = pdo_getall("mc_mapping_fans",["uid >"=>0,"follow"=>1,"nickname LIKE"=>"%{$value}%"],["uid","openid","nickname"],"","followtime DESC");
+        if (empty($fans))return error(1,"搜索结果为空");
+        foreach ($fans as $key => $value){
+            $tmp = mc_fansinfo($value["openid"]);
+            $fans[$key]["avatar"] = $tmp["tag"]["avatar"];
+        }
+        return $fans;
+    }
+    public static function SearchFans($name="",$value="",$tap="searchFans",$url=""){
+        return "
+<section style='display: flex;width: 100%'>
+    <input onchange='`{$name}change()`' type=\"text\" id='set{$name}' name=\"{$name}\" class=\"form-control\" value=\"{$value}\" />
+    <span class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#{$name}\">选择粉丝</span>
+</section>
+<div class=\"modal fade\" id=\"{$name}\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\" aria-hidden=\"true\">
+    <div class=\"modal-dialog\">
+        <div class=\"modal-content\">
+            <div class=\"modal-header\">
+                <button id='hide{$name}' type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">&times;</button>
+                <h4 class=\"modal-title\" id=\"myModalLabel\">选择粉丝</h4>
+            </div>
+            <div class=\"modal-body\">
+                <div class=\"form-group\">
+                    <label class=\"col-sm-2 control-label\" style=\"text-align:left;\">粉丝昵称</label>
+                    <div style='display: flex' class=\"col-sm-8\">
+                        <input id='{$name}search' type=\"text\" class=\"form-control\" value=\"\" />
+                        <span onclick='{$name}searchFans()' class='btn btn-default'>搜索</span>
+                    </div>
+                </div>
+                <section id='{$name}fansListBox' style='height: 35rem;overflow-x: auto'>
+                                 
+                </section>
+            </div>
+            <div class=\"modal-footer\"></div>
+        </div>
+    </div>
+</div>
+<script>
+    function {$name}chooseThisFansOpenid(openid) {
+        document.getElementById(`set{$name}`).value = openid;
+        document.getElementById(`hide{$name}`).click();
+    }
+    function {$name}searchFans() {
+        let search = document.getElementById(`{$name}search`).value;
+        $.post(`{$url}`,{value: search,tap:`{$tap}`},res=>{
+            if (res.errno != 0){
+                alert(res.message);
+                return;
+            }
+            $('#{$name}fansListBox').empty();
+            let str = ``;
+            for (let key in res.data){
+                if (res.data.hasOwnProperty(key)){
+                    str += `<section style='width: 100%; display: flex;border-top: 2px solid #ededed;padding: 0.5rem'>
+                        <section style='width: 33%;margin: auto'><img style='width: 4rem;height: 4rem' src='`+res.data[key].avatar+`' alt=''></section>
+                        <span style='width: 33%;margin: auto'>`+res.data[key].nickname+`</span>
+                        <section style='width: 33%;margin: auto;text-align: right'><span onclick='{$name}chooseThisFansOpenid(\"`+res.data[key].openid+`\")' class='btn btn-default'>选择</span></section>
+                    </section>`;
+                }
+            }
+            $('#{$name}fansListBox').append(str);
+        })
+    }
+</script>
+";
+    }
+    public static function SearchFansSubmit($tap="searchFans"){
+        global $_W,$_GPC;
+        if (!$_W["isajax"] || $_GPC["tap"] != $tap)return null;
+        $row =  self::SearchFansFunc($_GPC["value"]);
+        if (is_error($row))AppUtil::ReqFail($row["message"]);
+        AppUtil::ReqOk($row);
+    }
 
     public static function CoreModuleSitePay($fee,$tid,$title){
         $_POST["module"] = ModuleName;
