@@ -114,10 +114,6 @@ class AppUtil{
         self::ReqOk($result);
     }
 
-    public static function MakeQrCode2Show($content){
-        require_once IA_ROOT . "/addons/".ModuleName."/lib/exter/phpqrcode.php";
-        QRcode::png($content,false,QR_ECLEVEL_H,12,1);
-    }
     public static function ReqLoginFail($message,$errno=40019){
         self::Req("",$message,$errno);
     }
@@ -309,6 +305,11 @@ class W7DBBase extends We7Table {
 
 class W7Util{
 
+    public static function MakeQrCode2Show($content){
+        load()->library("qrcode");
+        QRcode::png($content,false,QR_ECLEVEL_H,12,1);
+    }
+
     public static function CheckKeyWord($content,$type,$status=1,$displayOrder=1,$moduleName=ModuleName){
         global $_W;
         return pdo_get("rule_keyword",array(
@@ -368,13 +369,14 @@ class W7Util{
             if(!empty($rule)){
                 $rid = $rule["id"];
             }else{
-                $rid = pdo_insert("rule",[
+                pdo_insert("rule",[
                     'uniacid' => $_W["uniacid"],
                     'name' => $keyword,
                     'module' => $module_name,
                     'displayorder'=>$displayOrder,
                     'status' => $status
                 ]);
+                $rid = pdo_insertid();
             }
             pdo_insert("rule_keyword",array(
                 "rid" => $rid,
