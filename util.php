@@ -293,7 +293,8 @@ class W7DBBase extends We7Table {
         global $_W;
         return $this->getById($id,$_W["uniacid"]);
     }
-    public function FillTableField($param) {
+    public function FillTableField($param,$updatetime=false){
+        if ($updatetime)$param["updatetime"] = TIMESTAMP;
         return AppUtil::FillFieldStruct($param,$this->field);
     }
 
