@@ -141,6 +141,15 @@ class AppUtil{
         $value = preg_replace("/\\\u[ed][0-9a-f]{3}\\\u[ed][0-9a-f]{3}/",$re,$value);
         return json_decode($value);
     }
+    public static function ArrKeys($arr, $key="id"){
+        $tmp = array();
+        if(!empty($arr)){
+            foreach ($arr as $k => $v){
+                array_push($tmp,$v[$key]);
+            }
+        }
+        return $tmp;
+    }
 }
 
 class Jwt {
@@ -301,6 +310,46 @@ class W7DBBase extends We7Table {
     public function WhereId($id){
         $this->query->where("id",$id);
         return $this;
+    }
+
+    public function Total($con=[]){
+        return pdo_count($this->getTableName(),$con,0);
+    }
+
+    public function UniacidGetPaging($con,$page,$size=15,$fields=[],$orderBy="createtime Desc"){
+        global $_W;
+        $row = array();
+        $page = max(1, intval($page));
+        if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
+        $row["total"] = $this->Total($con);
+        $row["total"] = intval($this->UniacidGetOne($con, array("COUNT(*) as total"))["total"]);
+        $row["list"] = $this->UniacidGetAll($con, $fields, $orderBy,$page, $size);
+        $row["page"] = $page;
+        $row["size"] = $size;
+        return $row;
+    }
+    public function UniacidGetAll($con = array(), $fields=array(),$orderBy = "", $offset=0, $size=0) {
+        global $_W;
+        $size ? $limit = [$offset,$size] : $limit = "";
+        if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
+        return pdo_getall($this->getTableName(), $con, $fields, '', $orderBy, $limit);
+    }
+    public function UniacidGetOne($con=array(), $fields = array()){
+        global $_W;
+        if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
+        return pdo_get($this->getTableName(),$con, $fields);
+    }
+    public function UniacidUpdate($data, $con=[],$updatetime=true):int{
+        global $_W;
+        if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
+        if ($updatetime)$data["updatetime"] = TIMESTAMP;
+        return pdo_update($this->getTableName(),$data,$con);
+    }
+    public function UniacidDel($con){
+        if (empty($con))return;
+        global $_W;
+        if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
+        pdo_delete($this->getTableName(),$con);
     }
 }
 
