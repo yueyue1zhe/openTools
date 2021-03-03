@@ -75,6 +75,10 @@ class BaseController{
 }
 
 class AppUtil{
+    public static function MakeOrderNo($pre=""){
+        $yCode = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J');
+        return $pre.$yCode[intval(date('Y')) - 2021] . strtoupper(dechex(date('m'))) . date('d') . substr(time(), -5) . substr(microtime(), 2, 5) . sprintf('%02d', rand(0, 99));
+    }
     public static function visitToken(){
         return Jwt::verifyToken($_SERVER['HTTP_TOKEN']);
     }
@@ -355,6 +359,18 @@ class W7DBBase extends We7Table {
 
 class W7Util{
 
+    public static function DoseMedia($url){
+        global $_W;
+        if(empty($url))return $url;
+        if(stripos($url,"http") !== 0)$url = $_W["attachurl"].$url;
+        return $url;
+    }
+    public static function FormatMedia($url){
+        global $_W;
+        if(empty($url))return $url;
+        if(stripos($url,$_W["attachurl"]) === 0)$url = str_replace($_W["attachurl"],"",$url);
+        return $url;
+    }
     public static function MakeQrCode2Show($content){
         load()->library("qrcode");
         QRcode::png($content,false,QR_ECLEVEL_H,12,1);
