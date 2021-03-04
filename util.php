@@ -154,6 +154,9 @@ class AppUtil{
         }
         return $tmp;
     }
+    public static function MakeTodayTime($h,$m,$s){
+        return mktime($h,$m,$s,date('m'),date('d'),date('Y'));
+    }
 }
 
 class Jwt {
@@ -316,7 +319,9 @@ class W7DBBase extends We7Table {
         return $this;
     }
 
-    public function Total($con=[]){
+    public function Total($con=[],$withUniacid=true){
+        global $_W;
+        if ($withUniacid && !in_array("uniacid",$con["uniacid"]))$con["uniacid"]=$_W["uniacid"];
         return pdo_count($this->getTableName(),$con,0);
     }
 
@@ -332,7 +337,7 @@ class W7DBBase extends We7Table {
         $row["size"] = $size;
         return $row;
     }
-    public function UniacidGetAll($con = array(), $fields=array(),$orderBy = "", $offset=0, $size=0) {
+    public function UniacidGetAll($con = array(), $fields=array(),$orderBy = "createtime DESC", $offset=0, $size=0) {
         global $_W;
         $size ? $limit = [$offset,$size] : $limit = "";
         if (empty($con["uniacid"]))$con["uniacid"] = $_W["uniacid"];
@@ -358,6 +363,81 @@ class W7DBBase extends We7Table {
 }
 
 class W7Util{
+
+    public static function ExcelExport($list,$filename,$indexKey,$startRow=1,$excel2007=true){
+        load()->library("phpexcel/PHPExcel");
+        if(empty($filename)) $filename = time();
+        if( !is_array($indexKey)) return;
+        $header_arr = array('A','B','C','D','E','F','G','H','I','J','K','L','M', 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+        $objPHPExcel = new \PHPExcel();
+        if($excel2007){
+            $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+            $filename = $filename.'.xlsx';
+        }else{
+            $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);
+            $filename = $filename.'.xls';
+        }
+        $objActSheet = $objPHPExcel->getActiveSheet();
+        foreach ($list as $row) {
+            foreach ($indexKey as $key => $value){
+                $objActSheet->setCellValue($header_arr[$key].$startRow,$row[$value]);
+            }
+            $startRow++;
+        }
+        header("Pragma: public");
+        header("Expires: 0");
+        header("Cache-Control:must-revalidate, post-check=0, pre-check=0");
+        header("Content-Type:application/force-download");
+        header("Content-Type:application/vnd.ms-execl");
+        header("Content-Type:application/octet-stream");
+        header("Content-Type:application/download");;
+        header('Content-Disposition:attachment;filename='.$filename.'');
+        header("Content-Transfer-Encoding:binary");
+        $objWriter->save('php://output');
+    }
+
+    /**
+     * 二次封装插件函数式调用 移动端
+     * @param string $module_name 模块名
+     * @param string $func 方法名
+     * @param array $param 参数
+     * @return mixed
+     */
+    public static function MobileHookGet($module_name,$func,$param=array()){
+        return self::HookGet($module_name,"hookMobile".$func,$param);
+    }
+
+    /**
+     * 二次封装插件函数式调用 pc端
+     * @param string $module_name 模块名
+     * @param string $func 方法名
+     * @param array $param 参数
+     * @return mixed
+     */
+    public static function WebHookGet($module_name,$func,$param=array()){
+        return self::HookGet($module_name,"hookWeb".$func,$param);
+    }
+
+    /**
+     * 微擎插件函数式调用
+     * @param $module_name
+     * @param $func
+     * @param array $params
+     * @return mixed
+     */
+    public static function HookGet($module_name,$func,$params=array()) {
+        load()->model('module');
+        $plugin_info = module_fetch($module_name);
+        if (empty($plugin_info)) {
+            return error(1,"{$module_name}插件不存在");
+        }
+        $plugin_module = WeUtility::createModuleHook($module_name);
+        if (method_exists($plugin_module, $func) && $plugin_module instanceof WeModuleHook) {
+            return call_user_func_array(array($plugin_module, $func), array('params' => $params));
+        }else{
+            return error(1,"模块 {$module_name} 不存在嵌入点 {$func}");
+        }
+    }
 
     public static function DoseMedia($url){
         global $_W;
