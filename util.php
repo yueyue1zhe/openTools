@@ -364,6 +364,31 @@ class W7DBBase extends We7Table {
 
 class W7Util{
 
+    public static function searchForm($searchKey,$label,$btn="搜索"){
+        global $_W,$_GPC;
+        return <<<EOF
+<div class="flex-def" >
+    <form action="" method="post" style="border: 1px solid #ededed;padding: .5rem 2rem;border-radius: 5px">
+        <span>{$label}</span>
+        <input id="key_{$searchKey}" type="text" value="{$_GPC[$searchKey]}" style="background-color: #ededed;padding: 5px 10px;border: none;margin: 0 1rem">
+        <input id="searchBtn_{$searchKey}" type="button" name="search" value="{$btn}" class="btn btn-primary btn-sm">
+    </form>
+    <script>
+        $("#searchBtn_{$searchKey}").click(()=>{
+            let value = $("#key_{$searchKey}").val();     
+            let url = window.document.location.href;
+            let keyword = "&{$searchKey}=";
+            if (url.indexOf(keyword) != -1){
+                url = url.substr(0,url.indexOf(keyword))+keyword+value;
+            }else {
+                url += keyword+value;
+            }
+            window.location.href = url;
+        });
+    </script>
+</div>
+EOF;
+    }
     public static function ExcelExport($list,$filename,$indexKey,$startRow=1,$excel2007=true){
         load()->library("phpexcel/PHPExcel");
         if(empty($filename)) $filename = time();
