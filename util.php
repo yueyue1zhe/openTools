@@ -157,6 +157,11 @@ class AppUtil{
     public static function MakeTodayTime($h,$m,$s){
         return mktime($h,$m,$s,date('m'),date('d'),date('Y'));
     }
+    public static function Arr2sort($arr,$key,$sort=SORT_DESC){
+        $last_key = array_column($arr,$key);
+        array_multisort($last_key ,$sort,$arr);
+        return $arr;
+    }
 }
 
 class Jwt {
@@ -321,10 +326,20 @@ class W7DBBase extends We7Table {
 
     public function Total($con=[],$withUniacid=true){
         global $_W;
-        if ($withUniacid && !in_array("uniacid",$con["uniacid"]))$con["uniacid"]=$_W["uniacid"];
+        if ($withUniacid && !in_array("uniacid",array_keys($con)))$con["uniacid"]=$_W["uniacid"];
         return pdo_count($this->getTableName(),$con,0);
     }
 
+    public function UniacidNewData($con=[]){
+        if (empty($con["uniacid"])){
+            global $_W;
+            $con["uniacid"] = $_W["uniacid"];
+        }
+        if (empty($con["createtime"]))$con["createtime"]=TIMESTAMP;
+        $param = $this->FillTableField($con);
+        pdo_insert($this->getTableName(),$param);
+        return pdo_insertid();
+    }
     public function UniacidGetPaging($con,$page,$size=15,$fields=[],$orderBy="createtime Desc"){
         global $_W;
         $row = array();
