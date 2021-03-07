@@ -162,6 +162,33 @@ class AppUtil{
         array_multisort($last_key ,$sort,$arr);
         return $arr;
     }
+    /**
+     * 当前服务器操作系统是否win
+     * @return bool
+     */
+    public static function is_win(){
+        return strtoupper(substr(PHP_OS,0,3))==='WIN';
+    }
+
+    public static function device_is_ios(){
+        return self::get_device_type() == "ios";
+    }
+
+    /**
+     * 当前客户端类型
+     * @return string android || ios || other
+     */
+    public static function get_device_type(){
+        $agent = strtolower($_SERVER['HTTP_USER_AGENT']);
+        $type = 'other';
+        if(strpos($agent, 'iphone') || strpos($agent, 'ipad')){
+            $type = 'ios';
+        }
+        if(strpos($agent, 'android')){
+            $type = 'android';
+        }
+        return $type;
+    }
 }
 
 class Jwt {
