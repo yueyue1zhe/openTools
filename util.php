@@ -28,6 +28,9 @@ class IModulesLoader{
     public static function findFile($class){
         $vendor = explode("\\",$class);
         $vendorDir = self::$vendorMap[$vendor[1]];
+        if (empty($vendorDir) && defined("PluginMap") && in_array($vendor[1],PluginMap)){
+            $vendorDir =  str_replace(ModuleName,ModuleName."_plugin_".$vendor[1],__DIR__);
+        }
         $filePath = substr($class, strlen($vendor[0].DIRECTORY_SEPARATOR.$vendor[1])) . '.php';
         return strtr($vendorDir . $filePath, '\\', DIRECTORY_SEPARATOR);
     }
