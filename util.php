@@ -48,10 +48,12 @@ class BaseController{
     protected $api_judge_si = true;
     protected $auth_route = true;
     protected $post;
+    protected $entry_path;
 
     public function __construct() {
         global $_GPC;
         $this->post = $_GPC["__input"];
+        $this->entry_path = $_GPC[ApiEntryKey];
         if (!$this->auth_route)return;
         $token = AppUtil::visitToken();
         if (empty($token) || is_error($token))AppUtil::ReqLoginFail($token["message"] ?: "token无效");
@@ -78,6 +80,13 @@ class BaseController{
 }
 
 class AppUtil{
+    public static function IsPhoneNum($num){
+        return preg_match("/^1[34578]\d{9}$/",$num);
+    }
+    public static function ApiValidate($param){
+        if(is_error($param))self::ReqFail($param["message"],$param["errno"]);
+        return $param;
+    }
     public static function MakeOrderNo($pre=""){
         $yCode = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J');
         return $pre.$yCode[intval(date('Y')) - 2021] . strtoupper(dechex(date('m'))) . date('d') . substr(time(), -5) . substr(microtime(), 2, 5) . sprintf('%02d', rand(0, 99));
@@ -135,6 +144,12 @@ class AppUtil{
         echo json_encode(["data" => $data,"message" => $message,"errno" => $errno]);
         exit();
     }
+    public static function throwToast($message){
+        return error(1,$message);
+    }
+    public static function throwRedicet($title,$path){
+        return error(2, ["title"=>$title,"path"=>$path]);
+    }
     public static function UrlIsImage($url){
         return !empty($url) && stripos(get_headers($url)[1],"image") !== false;
     }
@@ -191,6 +206,50 @@ class AppUtil{
             $type = 'android';
         }
         return $type;
+    }
+    public static function TimestampComputed($year, $month, $day, $timestamp=0){
+        $dos = sprintf("+%s year +%s month +%s day",$year,$month,$day);
+        return  $timestamp ?  strtotime($dos,$timestamp) : strtotime($dos);
+    }
+    public static function Sec2TimeString($time,$showHMS = true){
+        $arr = self::Sec2Time($time);
+        $str = "";
+        $arr["years"] > 0 ? $str .= $arr["years"]."年": null;
+        $arr["days"] > 0 ? $str .= $arr["days"]."天": null;
+        if($showHMS){
+            $arr["hours"] > 0 ? $str .= $arr["hours"]."个小时": null;
+            $arr["minutes"] > 0 ? $str .= $arr["minutes"]."分钟": null;
+            $arr["seconds"] > 0 ? $str .= $arr["seconds"]."秒": null;
+        }
+        return $str;
+    }
+    public static function Sec2Time($time){
+        if(is_numeric($time)){
+            $value = array(
+                "years" => 0, "days" => 0, "hours" => 0,
+                "minutes" => 0, "seconds" => 0,
+            );
+            if($time >= 31536000){
+                $value["years"] = floor($time/31536000);
+                $time = ($time%31536000);
+            }
+            if($time >= 86400){
+                $value["days"] = floor($time/86400);
+                $time = ($time%86400);
+            }
+            if($time >= 3600){
+                $value["hours"] = floor($time/3600);
+                $time = ($time%3600);
+            }
+            if($time >= 60){
+                $value["minutes"] = floor($time/60);
+                $time = ($time%60);
+            }
+            $value["seconds"] = floor($time);
+            return (array) $value;
+        }else{
+            return (bool) FALSE;
+        }
     }
 }
 
