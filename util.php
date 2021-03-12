@@ -251,6 +251,17 @@ class AppUtil{
             return (bool) FALSE;
         }
     }
+    public static function s_to_is($s=0){
+        $i    =    floor($s/60);
+        $s    =    $s%60;
+        $i    =    (strlen($i)==1)?'0'.$i:$i;
+        $s    =    (strlen($s)==1)?'0'.$s:$s;
+        return $i.':'.$s;
+    }
+    public static function phpLongApiInit(){
+        ignore_user_abort(true);
+        set_time_limit(0);
+    }
 }
 
 class Jwt {
@@ -467,7 +478,111 @@ class W7DBBase extends We7Table {
 }
 
 class W7Util{
-
+    /**
+     * 微擎临时带参二维码-时限检测
+     * @param string $keyword 关键字
+     * @param string $scene 参数
+     * @return bool
+     */
+    public static function FetchWxLinshiQrcodeValid($keyword,$scene){
+        global $_W;
+        $qrcode = pdo_get("qrcode",array(
+            "uniacid" => $_W["uniacid"],
+            "type" => "scene",
+            "qrcid" => $scene,
+            "name" => $keyword,
+            "keyword" =>$keyword,
+            "model" => 1,
+            "status" => 1
+        ));
+        if (($qrcode["expire"]+$qrcode["createtime"]) < TIMESTAMP){
+            pdo_delete("qrcode",array("id"=>$qrcode["id"]));
+            return false;
+        }
+        return true;
+    }
+    /**
+     * 生成临时带参二维码并创建关键字
+     * @param string $keyword 关键字
+     * @param string $module_name 模块名称
+     * @return mixed ['url'] 临时二维码链接 ['qrcid'] 临时二维码携带参数
+     */
+    public static function MakeWxLinshiQrCodeSyncKeyWord($keyword,$module_name=ModuleName){
+        $result = self::MakeWxLinShiQrCode();
+        if(is_error($result)){
+            return $result;
+        }
+        self::FetchQrcodeKeyWord($keyword,$result['qrcid'],$result["url"],$result["ticket"]);
+        self::FetchKeyWord($keyword,$module_name);
+        return $result;
+    }
+    /**
+     * 微擎生成临时带参二维码
+     * @return mixed ['qrcid'] 临时二维码携带的参数  ['url']临时二维码链接 ["ticket"]临时二维码票据
+     */
+    public static function MakeWxLinShiQrCode(){
+        $scene = pdo_get("qrcode",[],array("MAX(qrcid) as choose"))["choose"]+1;
+        $barcode = array(
+            'expire_seconds' => 2592000,
+            'action_name' => 'QR_SCENE',
+            'action_info' => array(
+                'scene' => array(
+                    'scene_id' => $scene #临时二维码携带参数
+                ),
+            ),
+        );
+        $account_api = WeAccount::create();
+        $result = $account_api->barCodeCreateDisposable($barcode);
+        if (is_error($result)){
+            return $result;
+        }
+        $result["qrcid"] = $scene;
+        return $result;
+    }
+    /**
+     * 微擎生成二维码关键字
+     * @param string $keyword 关键字
+     * @param string $scene 临时二维码 qrcid MakeWxLinShiQrCode函数中可获取
+     * @param string $url 临时二维码 url MakeWxLinShiQrCode函数中可获取
+     * @param string $ticket 临时二维码 ticket MakeWxLinShiQrCode函数中可获取
+     */
+    public static function FetchQrcodeKeyWord($keyword,$scene,$url,$ticket){
+        global $_W;
+        $qrcodeKeyWord = pdo_get("qrcode",array(
+            "uniacid"=>$_W["uniacid"],
+            "qrcid" => $scene,
+            "keyword"=>$keyword,
+            "url" => $url,
+            "ticket" => $ticket
+        ));
+        if (empty($qrcodeKeyWord)){
+            pdo_insert("qrcode",array(
+                "uniacid" => $_W["uniacid"],
+                "acid" => $_W["uniacid"],
+                "type" => "scene",
+                "extra" => 0,
+                "qrcid" => $scene,
+                "scene_str" => $keyword,
+                "name" => $keyword,
+                "keyword" => $keyword,
+                "model" =>  1,
+                "ticket" => $ticket,
+                "url" => $url,
+                "expire" => 2592000,
+                "subnum" => 0,
+                "createtime" => TIMESTAMP,
+                "status" => 1
+            ));
+        }
+    }
+    public static function W7RouteMobileUrl($method,$query="",$moduleName=ModuleName){
+        global $_W;
+        return $url = "{$_W["siteroot"]}app/index.php?i={$_W['uniacid']}&c=entry&do={$method}&m=".$moduleName.$query;
+    }
+    public static function FakeCurl($url,$timeout=1){
+        load()->func('communication');
+        ihttp_request($url,"", $extra = array(), $timeout);
+    }
     public static function searchForm($searchKey,$label,$btn="搜索"){
         global $_W,$_GPC;
         return <<<EOF
@@ -579,6 +694,18 @@ EOF;
         if(empty($url))return $url;
         if(stripos($url,$_W["attachurl"]) === 0)$url = str_replace($_W["attachurl"],"",$url);
         return $url;
+    }
+
+    /**
+     * 微擎生成二维码
+     * @param string $content 二维码内容
+     * @return array ['path'] ['url']
+     */
+    public static function MakeQrCode($content){
+        load()->library("qrcode");
+        $fileName = W7Util::RandomName("tmp",".png");
+        QRcode::png($content,$fileName,QR_ECLEVEL_H,12,1);
+        return self::TmpImgSave(self::TmpPath($fileName));
     }
     public static function MakeQrCode2Show($content){
         load()->library("qrcode");
