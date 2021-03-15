@@ -514,6 +514,10 @@ class W7DBBase extends We7Table {
 }
 
 class W7Util{
+    public static function DoseModuleStatic($path){
+        global $_W;
+        return "{$_W['siteroot']}addons/{$_W['current_module']['name']}/{$path}";
+    }
     /**
      * 微擎临时带参二维码-时限检测
      * @param string $keyword 关键字
