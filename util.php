@@ -48,12 +48,10 @@ class BaseController{
     protected $api_judge_si = true;
     protected $auth_route = true;
     protected $post;
-    protected $entry_path;
 
     public function __construct() {
         global $_GPC;
         $this->post = $_GPC["__input"];
-        $this->entry_path = $_GPC[ApiEntryKey];
         if (!$this->auth_route)return;
         $token = AppUtil::visitToken();
         if (empty($token) || is_error($token))AppUtil::ReqLoginFail($token["message"] ?: "token无效");
@@ -80,6 +78,10 @@ class BaseController{
 }
 
 class AppUtil{
+    public static function ApiEntryPath(){
+        global $_GPC;
+        return $_GPC[ApiEntryKey];
+    }
     public static function IsPhoneNum($num){
         return preg_match("/^1[34578]\d{9}$/",$num);
     }
