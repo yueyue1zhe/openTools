@@ -59,8 +59,8 @@ class BaseController{
         $this->token = $token;
     }
 
-    protected function token_award($data, $jwtUuid){
-        return \Jwt::awardToken($data,$this->api_scope,$jwtUuid);
+    protected function token_award($data, $jwtUuid,$exp=7200){
+        return \Jwt::awardToken($data,$this->api_scope,$jwtUuid,$exp);
     }
     protected function token_judge_j(){if (empty($this->token))return;}
     private function token_judge_si($token){
