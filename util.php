@@ -78,6 +78,18 @@ class BaseController{
 }
 
 class AppUtil{
+    public static function ArraySort($array,$keys,$sort='asc') {
+        $newArr = $valArr = array();
+        foreach ($array as $key=>$value) {
+            $valArr[$key] = $value[$keys];
+        }
+        ($sort == 'asc') ?  asort($valArr) : arsort($valArr);
+        reset($valArr);
+        foreach($valArr as $key=>$value) {
+            $newArr[$key] = $array[$key];
+        }
+        return $newArr;
+    }
     public static function ApiEntryPath(){
         global $_GPC;
         return $_GPC[ApiEntryKey];
@@ -107,7 +119,7 @@ class AppUtil{
             "func" => $func
         ];
     }
-    private static function setMarCors($allowOrigin){
+    public static function setMarCors($allowOrigin){
         if ($_SERVER['REQUEST_METHOD'] == 'GET')exit();
         if (!empty($allowOrigin)){
             $origin = isset($_SERVER['HTTP_ORIGIN'])? $_SERVER['HTTP_ORIGIN'] : '';
