@@ -94,6 +94,10 @@ class AppUtil{
         global $_GPC;
         return $_GPC[ApiEntryKey];
     }
+    public static function ApiPostKeys(){
+        global $_GPC;
+        return array_keys($_GPC["__input"]);
+    }
     public static function IsPhoneNum($num){
         return preg_match("/^1[34578]\d{9}$/",$num);
     }
