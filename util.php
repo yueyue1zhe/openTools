@@ -637,9 +637,8 @@ class W7Util{
         global $_W;
         return $url = "{$_W["siteroot"]}app/index.php?i={$_W['uniacid']}&c=entry&do={$method}&m=".$moduleName.$query;
     }
-    public static function FakeCurl($url,$timeout=1){
+    public static function FakeCurl($url,$timeout=0){
         load()->func('communication');
-        //todo:: 换成 fsockopen ？
         ihttp_request($url,"", $extra = array(), $timeout);
     }
     public static function searchForm($searchKey,$label,$btn="搜索"){
@@ -858,9 +857,10 @@ EOF;
      * @return mixed
      */
     public static function SearchFansFunc($value){
+        global $_W;
         $value = trim($value);
         if (empty($value))return error(1,"搜索条件不能为空");
-        $fans = pdo_getall("mc_mapping_fans",["uid >"=>0,"follow"=>1,"nickname LIKE"=>"%{$value}%"],["uid","openid","nickname"],"","followtime DESC");
+        $fans = pdo_getall("mc_mapping_fans",["uniacid"=>$_W["uniacid"],"uid >"=>0,"follow"=>1,"nickname LIKE"=>"%{$value}%"],["uid","openid","nickname"],"","followtime DESC");
         if (empty($fans))return error(1,"搜索结果为空");
         foreach ($fans as $key => $value){
             $tmp = mc_fansinfo($value["openid"]);
@@ -974,6 +974,7 @@ EOF;
             $oauth['nationality'] = $userinfo['country'];
         }
         self::SetSession($oauth);
+        self::wxCode2FansInfoSync($oauth_account,$oauth);
         return $oauth;
     }
     public static function SetSession($oauth){
