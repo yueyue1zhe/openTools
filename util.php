@@ -960,11 +960,20 @@ EOF;
     public static function WxCode2FansInfo($code){
         $oauth_account = \WeAccount::createByUniacid();
         $oauth = $oauth_account->getOauthInfo($code);
-        if (is_error($oauth)){
-            return $oauth;
+        if (is_error($oauth))return $oauth;
+        if (empty($oauth["openid"]))return error(8,"not find openid");
+        $oauth["follow"] = $oauth_account->fansQueryInfo($oauth["openid"])["subscribe"];
+        if ($oauth["scope"] == "userinfo" || $oauth["scope"] == "snsapi_userinfo"){
+            $userinfo = $oauth_account->getOauthUserInfo($oauth['access_token'], $oauth['openid']);
+            $oauth["nickname"] = stripslashes(stripcslashes($userinfo['nickname']));
+            $oauth["avatar"] = $userinfo['headimgurl'];
+            $oauth["unionid"] = $userinfo["unionid"];
+            $oauth['gender'] = $userinfo['sex'];
+            $oauth['residecity'] = $userinfo['city'] . '市';
+            $oauth['resideprovince'] = $userinfo['province'] . '省';
+            $oauth['nationality'] = $userinfo['country'];
         }
-        self::wxCode2FansInfoSync($oauth_account,$oauth);
-        return mc_fansinfo($oauth["openid"]);
+        return $oauth;
     }
     private static function wxCode2FansInfoSync($oauth_account,$oauth){
         global $_W;
