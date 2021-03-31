@@ -973,7 +973,24 @@ EOF;
             $oauth['resideprovince'] = $userinfo['province'] . '省';
             $oauth['nationality'] = $userinfo['country'];
         }
+        self::SetSession($oauth);
         return $oauth;
+    }
+    public static function SetSession($oauth){
+        global $_W;
+        $_W['openid'] = $oauth["openid"];
+        load()->classs('wesession');
+        WeSession::start($_W['uniacid'], $_W['openid']);
+        $_SESSION['openid'] = $oauth["openid"];
+        $_SESSION['session_key'] = $oauth["session_key"];
+        $_SESSION['oauth_openid'] = $oauth["openid"];
+        if (empty($userinfo)) {
+            $userinfo = array(
+                'openid' => $oauth["openid"],
+            );
+        }
+        $_SESSION['userinfo'] = base64_encode(iserializer($userinfo));
+        session_id($_W['session_id']);
     }
     private static function wxCode2FansInfoSync($oauth_account,$oauth){
         global $_W;
