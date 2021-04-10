@@ -571,7 +571,7 @@ class W7Util{
             return $result;
         }
         self::FetchQrcodeKeyWord($keyword,$result['qrcid'],$result["url"],$result["ticket"]);
-        self::FetchKeyWord($keyword,$module_name);
+        self::FetchKeyWord($keyword,1,1,1,$module_name);
         return $result;
     }
     /**
@@ -763,8 +763,9 @@ EOF;
     public static function MakeQrCode($content,$justLocal = false){
         load()->library("qrcode");
         $fileName = W7Util::RandomName("tmp",".png");
-        QRcode::png($content,$fileName,QR_ECLEVEL_H,12,1);
-        return self::TmpImgSave(self::TmpPath($fileName),$justLocal);
+        $filePath = self::TmpPath($fileName);
+        QRcode::png($content,$filePath,QR_ECLEVEL_H,12,1);
+        return self::TmpImgSave($filePath,$justLocal);
     }
     public static function MakeQrCode2Show($content){
         load()->library("qrcode");
@@ -956,7 +957,10 @@ EOF;
         $account_api = WeAccount::create();
         return $account_api->getJssdkConfig($url);
     }
-
+    public static function WxH5Openid2FansInfo($openid){
+        $oauth_account = \WeAccount::createByUniacid();
+        return $oauth_account->fansQueryInfo($openid);
+    }
     public static function WxCode2FansInfo($code){
         $oauth_account = \WeAccount::createByUniacid();
         $oauth = $oauth_account->getOauthInfo($code);
@@ -1345,10 +1349,17 @@ EOF;
     public static function ImgUrl2Site($url,$justLocal=false){
         $fileName = self::RandomName("tmp",".png");
         $row = file_get_contents($url);
-        file_put_contents($fileName,$row);
+        $filePath = self::TmpPath($fileName);
+        file_put_contents($filePath,$row);
+        return self::TmpImgSave($filePath,$justLocal);
+    }
+    public static function VideoUrl2Site($url,$justLocal=false){
+        $fileName = self::RandomName("tmp",".mp4");
+        $row = file_get_contents($url);
+        $filePath = self::TmpPath($fileName);
+        file_put_contents($filePath,$row);
         load()->func('file');
-        $tmpPath = self::TmpPath($fileName);
-        return self::TmpImgSave($tmpPath,$justLocal);
+        return self::TmpVideoSave($filePath,$justLocal);
     }
     public static function Src2Media($src,$type="images"){
         $account_api = WeAccount::create();
@@ -1360,12 +1371,22 @@ EOF;
         $result = $account_api->downloadMedia($media_id);
         return $result;
     }
+    public static function TmpVideoSave($tmpPath,$justLocal = false){
+        return self::tmpFileSave($tmpPath,".mp4","video",$justLocal);
+    }
+    public static function TmpAudioSave($tmpPath,$justLocal=false){
+        return self::tmpFileSave($tmpPath,".mp3","audio",$justLocal);
+    }
     public static function TmpImgSave($tmpPath,$justLocal = false){
+        return self::tmpFileSave($tmpPath,".png","image",$justLocal);
+    }
+    public static function tmpFileSave($tmpPath,$ext,$type,$justLocal = false){
         global $_W;
-        $fileName = self::RandomName("tmp",".png");
+        $fileName = self::RandomName("tmp",$ext);
         load()->func('file');
-        $result = file_upload(["name"=>$fileName,"tmp_name"=>$tmpPath], 'image');
+        $result = file_upload(["name"=>$fileName,"tmp_name"=>$tmpPath], $type);
         if(is_error($result)){
+            file_delete($tmpPath);
             return $result;
         }
         $url = $_W["attachurl_local"].$result["path"];
@@ -1383,7 +1404,13 @@ EOF;
     }
     public static function TmpPath($fileName){
         global $_W;
-        return IA_ROOT.DIRECTORY_SEPARATOR.explode("/",$_W['script_name'])[1].DIRECTORY_SEPARATOR.$fileName;
+        $w7EntryScriptName = ["/app/index.php","/web/index.php"];
+        if (in_array($_W["script_name"],$w7EntryScriptName)){
+            $tmpPath = IA_ROOT.DIRECTORY_SEPARATOR.explode("/",$_W['script_name'])[1].DIRECTORY_SEPARATOR.$fileName;
+        }else{
+            $tmpPath = IA_ROOT.DIRECTORY_SEPARATOR."app".DIRECTORY_SEPARATOR.$fileName;
+        }
+        return $tmpPath;
     }
 }
 
