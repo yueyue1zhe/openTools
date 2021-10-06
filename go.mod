@@ -1,5 +1,8 @@
 module openTools
 
-go 1.14
+go 1.16
 
-require github.com/go-git/go-git/v5 v5.1.0 // indirect
+require (
+	github.com/gookit/color v1.4.2 // indirect
+	github.com/gookit/gcli/v3 v3.0.0 // indirect
+)
