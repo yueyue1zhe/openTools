@@ -48,6 +48,12 @@ func (srv *Services) Start(s service.Service) error {
 	if srv.Log != nil {
 		srv.Log.Info("Start run http server")
 	}
+	gin.SetMode(gin.ReleaseMode)
+	if err := env.Register(); err == nil {
+		if env.Conf.Http.Debug {
+			gin.SetMode(gin.DebugMode)
+		}
+	}
 	go srv.StarServer()
 	return nil
 }
