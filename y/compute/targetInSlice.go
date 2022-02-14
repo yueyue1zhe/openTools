@@ -9,6 +9,15 @@ func (*Compute) StringInSlice(target string, sucList []string) bool {
 	return false
 }
 
+func (*Compute) IntInSlice(target int, sucList []int) bool {
+	for _, s := range sucList {
+		if target == s {
+			return true
+		}
+	}
+	return false
+}
+
 func (*Compute) Int64InSlice(target int64, sucList []int64) bool {
 	for _, s := range sucList {
 		if target == s {
