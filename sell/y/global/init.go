@@ -40,7 +40,6 @@ func (y *Global) Cur(c *gin.Context) *Global {
 }
 func (y *Global) clientIp(c *gin.Context) string {
 	ip := c.GetHeader("X-Real-IP")
-	fmt.Println("X-Real-IP:" + ip)
 	return ip
 }
 
