@@ -1,0 +1,105 @@
+<!doctype html>
+<!--[if lt IE 7 ]> <html lang="en" class="ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="ie9"> <![endif]-->
+<!--[if !IE]><!--> <html lang="en"> <!--<![endif]-->
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="format-detection" content="telephone=no, address=no">
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-touch-fullscreen" content="yes"/>
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<script type="text/javascript" src="../../extras/jquery.min.1.7.js"></script>
+	<script type="text/javascript" src="../../extras/modernizr.2.5.3.min.js"></script>
+</head>
+<style>
+	/**{*/
+	/*	margin: 0;*/
+	/*	padding: 0;*/
+	/*}*/
+	/*.flipbook .ctx{*/
+	/*	background-color: #ffffff;*/
+	/*}*/
+	.page+div{
+		text-align: center;
+		background-image: url(pages/1.jpg);
+	}
+	.page{
+		/*background-color: red;*/
+		/*background-image: url(pages/1.jpg);*/
+		/*-moz-transform:scaleX(-1);*/
+		/*-webkit-transform:scaleX(-1);*/
+		/*-o-transform:scaleX(-1);*/
+		/*transform:scaleX(-1);*/
+	}
+	.flipbook .page{
+		background-color: #ffffff;
+		background-size: 100% 100%;
+		/*background-image: url(pages/1.jpg);*/
+		/*-moz-transform:scaleX(-1);*/
+		/*-webkit-transform:scaleX(-1);*/
+		/*-o-transform:scaleX(-1);*/
+		/*transform:scaleX(-1);*/
+		/*filter:grayscale(50%)*/
+	}
+	/*.flipbook .ctx,*/
+	/*.flipbook .ctx img{*/
+	/*	!*width: 50vw;*!*/
+	/*	height: auto;*/
+	/*}*/
+</style>
+<body>
+<div class="flipbook-viewport">
+	<div class="container">
+		<div class="flipbook">
+			<div style="background-image:url(pages/1.jpg)"></div>
+			<div style="background-image:url(pages/2.jpg)"></div>
+			<div style="background-image:url(pages/3.jpg)"></div>
+			<div style="background-image:url(pages/4.jpg)"></div>
+			<div style="background-image:url(pages/5.jpg)"></div>
+			<div style="background-image:url(pages/6.jpg)"></div>
+			<div style="background-image:url(pages/7.jpg)"></div>
+			<div style="background-image:url(pages/8.jpg)"></div>
+			<div style="background-image:url(pages/9.jpg)"></div>
+			<div style="background-image:url(pages/10.jpg)"></div>
+			<div style="background-image:url(pages/11.jpg)"></div>
+			<div style="background-image:url(pages/12.jpg)"></div>
+		</div>
+	</div>
+</div>
+
+
+<script type="text/javascript">
+
+function loadApp() {
+
+	// Create the flipbook
+
+	$('.flipbook').turn({
+		width:"100vw",
+		height:$(window).height() - 160,//书本的大小
+		direction:"ltr",//书本翻动方向
+		elevation: 50, //在转换期间设置页面的标高。
+		display:"single",//display("double"  "single")  展示一页或者两页，默认double
+		duration:1000,// 设置翻页动画持续时间即翻页的快慢，默认600(毫秒)
+		gradients: true,//翻页阴影
+		acceleration:true,// 硬件加速，对于触摸设备，一定要设置true
+		autoCenter:true //是否居中 默认false
+	});
+}
+
+// Load the HTML4 version if there's not CSS transform
+yepnope({
+	test : Modernizr.csstransforms,
+	yep: ['../../lib/turn.js'],
+	nope: ['../../lib/turn.html4.min.js'],
+	// both: ['css/basic.css'],
+	complete: loadApp
+});
+
+
+</script>
+
+</body>
+</html>
