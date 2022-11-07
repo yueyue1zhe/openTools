@@ -53,7 +53,7 @@ func ToTsTypes(obj interface{}, typePreName string) (filename, row string) {
 	}
 	row += "}\n"
 	for _, extend := range appendOtherExtends {
-		row += fmt.Sprintf("interface %v extends %v {}", useTypeName, extend)
+		row += fmt.Sprintf("interface %v extends %v {}\n", useTypeName, extend)
 	}
 	return
 }
