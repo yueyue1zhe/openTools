@@ -16,3 +16,9 @@ func FileMD5(filePath string) (string, error) {
 	_, _ = io.Copy(hash, file)
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
+
+func FileReaderMd5(reader io.Reader) string {
+	hash := md5.New()
+	_, _ = io.Copy(hash, reader)
+	return hex.EncodeToString(hash.Sum(nil))
+}
