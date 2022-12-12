@@ -77,7 +77,7 @@ func (w *W7Manager) GetLoginUrl(redirectUrl string) (string, error) {
 type CodeToAccessTokenResult struct {
 	//access_token, 有效期两小时
 	AccessToken string `json:"access_token"`
-	ExpireTime  int64  `json:"expire_time"`
+	ExpireTime  int64  `json:"expire_time"` //截止的时间戳
 }
 
 func (w *W7Manager) CodeToAccessToken(code string) (*CodeToAccessTokenResult, error) {
@@ -99,10 +99,12 @@ func (w *W7Manager) CodeToAccessToken(code string) (*CodeToAccessTokenResult, er
 }
 
 type UserInfoResult struct {
-	OpenID       string `json:"open_id"`
-	Nickname     string `json:"nickname"`
-	Avatar       string `json:"avatar"`
-	RoleIdentity string `json:"role_identity"`
+	OpenID         string `json:"open_id"`  //用户openid
+	Nickname       string `json:"nickname"` //昵称
+	Avatar         string `json:"avatar"`
+	RoleIdentity   string `json:"role_identity"`   //角色
+	ComponentAppid string `json:"component_appid"` //站点id
+	FounderOpenid  string `json:"founder_openid"`  //创始人openid
 }
 
 func (w *W7Manager) UserInfo(accessToken string) (*UserInfoResult, error) {
