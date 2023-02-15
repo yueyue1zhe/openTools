@@ -1,5 +1,5 @@
-import {scopeWritePhotosAlbum} from "@/common/utils/function/scope";
-import utils from "@/common/utils";
+import {scopeWritePhotosAlbum} from "./scope";
+import toast from "./toast";
 
 export function imgTmpPathToToPhotosAlbum(tmpPath :string){
     return new Promise<void>(async (resolve, reject)=>{
@@ -7,11 +7,11 @@ export function imgTmpPathToToPhotosAlbum(tmpPath :string){
         uni.saveImageToPhotosAlbum({
             filePath: tmpPath,
             success: function() {
-                utils.toast("保存成功");
+                toast("保存成功");
                 resolve();
             },
             fail() {
-                utils.toast("图片保存失败");
+                toast("图片保存失败");
                 reject();
             }
         });
@@ -33,12 +33,12 @@ export function imgUrlToLocal(url:string){
                 if (res.statusCode === 200) {
                     imgTmpPathToToPhotosAlbum(res.tempFilePath).then(resolve).catch(reject);
                 } else {
-                    utils.toast("图片下载失败");
+                    toast("图片下载失败");
                     reject();
                 }
             },
             fail() {
-                utils.toast("图片下载失败");
+                toast("图片下载失败");
             }
         });
     })
