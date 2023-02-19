@@ -2,8 +2,8 @@ import {$YTypes} from "@/components/y-ui/index";
 
 
 declare global {
-    interface Uni{
-        $y:$YTypes
+    interface Uni {
+        $y: $YTypes
     }
 
     type GlobalToken = {
@@ -11,7 +11,7 @@ declare global {
         time: number
     }
 
-    type VoidCallBack = (res?: any) => void;
+    type YCallBack<T = any> = (res?: T) => void;
 
 
     interface RequestResponse {
@@ -26,4 +26,12 @@ declare global {
         total: number;
         size: number;
     }
+
+    interface AttachResult {
+        id :number
+        filename:string
+        attachment:string
+    }
+
+    type ToMediaFunc = (val:string)=>string;
 }
