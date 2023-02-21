@@ -1,4 +1,4 @@
-function toast(title: string | number, callback: VoidCallBack | false = false, duration = 1500) {
+export function toast(title: string | number, callback: YCallBack | false = false, duration = 1500) {
     uni.showToast({
         title: String(title),
         icon: 'none',
@@ -11,4 +11,16 @@ function toast(title: string | number, callback: VoidCallBack | false = false, d
     }
 }
 
-export default toast
+
+export function toastFastModal(content: string, opt ?: { title?: string, page?: string }) {
+    uni.showModal({
+        title: opt?.title || "系统提示",
+        content: content,
+        showCancel: false,
+        success: () => {
+            uni.reLaunch({
+                url: opt?.page || "/pages/index/index"
+            })
+        }
+    })
+}
