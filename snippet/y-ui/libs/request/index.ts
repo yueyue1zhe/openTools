@@ -27,6 +27,7 @@ class Request {
         options.data = options.data || {};
         options.header = Object.assign({}, this.config.header, options.header);
         options.method = options.method || this.config.method;
+        uni.showNavigationBarLoading();
         return new Promise((resolve: (res: any) => void, reject) => {
             options.success = (res) => {
                 if (res.statusCode == 200) {
@@ -40,6 +41,7 @@ class Request {
             }
             options.complete = (response) => {
                 // 请求返回后，隐藏loading(如果请求返回快的话，可能会没有loading)
+                uni.hideNavigationBarLoading()
                 uni.hideLoading();
                 // 清除定时器，如果请求回来了，就无需loading
                 if (typeof this.config.timer == "number") {
