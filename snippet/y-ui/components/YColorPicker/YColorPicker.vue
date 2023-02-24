@@ -3,13 +3,17 @@
     <uni-popup ref="refUniPopup" type="bottom" @change="popupChange">
       <view class="color-picker-box" @touchmove="preventDefault">
         <view class="head y-flex y-col-center">
-          <view class="side">
-            <uni-icons @click="state.popupShow = false" type="close" size="30"></uni-icons>
+          <view class="side left">
+            <uni-icons @click="state.popupShow = false" type="closeempty" size="30"></uni-icons>
+          </view>
+          <view class="side right">
+            <uni-icons @click="state.popupShow = false" type="checkmarkempty" size="30"></uni-icons>
           </view>
           <view class="main y-flex-1">
             <view class="title">请选择颜色</view>
-            <view class="y-font-xs">可通过下方滑块颜色预览</view>
-            <view>{{ state.colorRes }}</view>
+            <view class="y-font-xs y-flex y-row-center y-col-center y-tips-color">
+              已选颜色: <view class="color-preview"></view> {{ state.colorRes }}
+            </view>
           </view>
         </view>
         <movable-area id="target" class="target" :style="targetStyle">
@@ -290,9 +294,14 @@ const rgb2hsv = (color: string) => {
     height: 120rpx;
     position: relative;
 
-    .side {
+    .side{
       position: absolute;
+    }
+    .side.left {
       left: $y-font-lg;
+    }
+    .side.right{
+      right: $y-font-lg;
     }
 
     .main {
@@ -350,5 +359,12 @@ const rgb2hsv = (color: string) => {
   .line.bottom {
     bottom: -10rpx;
   }
+}
+
+.color-preview{
+  height: $y-font-md;
+  width: $y-font-md;
+  background-color: v-bind("state.colorRes");
+  margin: 0 10rpx;
 }
 </style>

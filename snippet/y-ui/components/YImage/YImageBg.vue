@@ -6,6 +6,7 @@
 
 <script lang="ts" setup>
 import {computed} from "vue";
+import widthHeightAppendStyle from "@/components/y-ui/components/YImage/widthHeightAppendStyle";
 
 const props = withDefaults(defineProps<{
   src: string;
@@ -18,30 +19,16 @@ const props = withDefaults(defineProps<{
   src: "",
   width: "100%",
   height: "",
-  minHeight: "200rpx",
+  minHeight: "",
   yStyle: "",
   yClass: "",
 })
-const safeSize = (val: number | string) => {
-  if (typeof val === "number") {
-    return val + "rpx";
-  }
-  if (!isNaN(parseInt(val))) {
-    val += "rpx";
-  }
-  return val;
-}
 
 const useSize = computed(() => {
   let outStyle = ";";
-  let useWidth = safeSize(props.width);
-  let useHeight = safeSize(props.height);
-  if (!useWidth && !useHeight) return outStyle;
-  outStyle += `height:${useHeight ? useHeight : useWidth};`;
-  outStyle += `width:${useWidth ? useWidth : useHeight};`;
-  const useMinHeight = safeSize(props.minHeight);
+  const useMinHeight = uni.$y.addUnit(props.minHeight);
   if (useMinHeight) outStyle += `min-height:${useMinHeight};`
-  return outStyle;
+  return outStyle + widthHeightAppendStyle(props.width,props.height);
 })
 
 const useStyle = computed((): string => {
