@@ -12,7 +12,8 @@ import colorGradient from "./libs/function/colorGradient";
 import addUnit from "./libs/function/addUnit";
 import canvas from "./libs/helper/canvas";
 import lottie from "./libs/helper/lottie";
-import imgUtil from "@/components/y-ui/libs/helper/imgUtil";
+import imgUtil from "./libs/helper/imgUtil";
+import uniCopy from "@/components/y-ui/libs/helper/uni-copy";
 
 const $y = {
     addUnit,
@@ -23,6 +24,7 @@ const $y = {
     throttle,
     colorGradient,
     queryParams,
+    copy:uniCopy,
 
 
     imgUtil,
