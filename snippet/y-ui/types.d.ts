@@ -5,6 +5,10 @@ declare global {
     interface Uni {
         $y: $YTypes
     }
+    interface NodeInfo {
+        width:number;
+        height:number;
+    }
 
     type GlobalToken = {
         data: string,
