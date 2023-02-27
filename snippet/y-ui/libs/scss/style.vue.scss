@@ -152,3 +152,9 @@ page {
 
 /* end--去除button的所有默认样式--end */
 
+
+
+button[disabled].y-button-disabled{
+  background-color: #f7f7f7 !important;
+  color: rgba(0,0,0,.3) !important;
+}

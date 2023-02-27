@@ -25,11 +25,11 @@ const writeWords =(options: WriteWordsOptions) => {
 
                     if (j === options.maxLine - 1) { //如果是最后一行
 
-                        options.ctx.fillText(nowStr.slice(0, m - 1) + '...', options.x, options.y + (j + 1) * 18); //(j+1)*18这是每一行的高度
+                        options.ctx.fillText(nowStr.slice(0, m - 1) + '...', options.x, options.y + (j + 1) * options.fontSize); //(j+1)*fontSize这是每一行的高度
 
                     } else {
 
-                        options.ctx.fillText(nowStr.slice(0, m), options.x, options.y + (j + 1) * 18);
+                        options.ctx.fillText(nowStr.slice(0, m), options.x, options.y + (j + 1) * options.fontSize);
 
                     }
 
