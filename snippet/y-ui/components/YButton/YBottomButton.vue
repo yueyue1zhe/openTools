@@ -2,7 +2,7 @@
   <view>
     <view class="y-bottom-button-safe"></view>
     <view class="y-bottom-button-box y-flex y-row-center y-col-center">
-      <button @click="emit('click')" class="y-reset-button custom-button">
+      <button @click="clickThis" class="y-reset-button custom-button">
         <slot></slot>
       </button>
     </view>
@@ -38,6 +38,12 @@ const useSafeArea = () => {
   }
 }
 useSafeArea()
+
+const clickThis = ()=>{
+  uni.$y.throttle(()=>{
+    emit('click')
+  })
+}
 
 </script>
 

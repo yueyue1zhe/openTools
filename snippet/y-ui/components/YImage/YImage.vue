@@ -1,5 +1,6 @@
 <template>
   <image
+      @click="clickThis"
       :src="props.src"
       :style="useStyle"
       :class="yClass"
@@ -17,8 +18,8 @@ import widthHeightAppendStyle from "@/components/y-ui/components/YImage/widthHei
 
 const props = withDefaults(defineProps<{
   src: string,
-  yStyle: string,
-  yClass: string,
+  yStyle?: string,
+  yClass?: string,
   mode?: "scaleToFill" | "aspectFit" | "aspectFill" | "widthFix" | "heightFix",
   width?: string | number,
   height?: string | number,
@@ -34,6 +35,14 @@ const props = withDefaults(defineProps<{
 const useStyle = computed(()=>{
   return props.yStyle + widthHeightAppendStyle(props.width,props.height);
 })
+const emit = defineEmits<{
+  (e:"click"):void
+}>()
+const clickThis = ()=>{
+  uni.$y.throttle(()=>{
+    emit("click")
+  })
+}
 </script>
 
 <style lang="scss" scoped>

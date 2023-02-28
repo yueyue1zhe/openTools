@@ -5,9 +5,10 @@ declare global {
     interface Uni {
         $y: $YTypes
     }
+
     interface NodeInfo {
-        width:number;
-        height:number;
+        width: number;
+        height: number;
     }
 
     type GlobalToken = {
@@ -32,12 +33,12 @@ declare global {
     }
 
     interface AttachResult {
-        id :number
-        filename:string
-        attachment:string
+        id: number
+        filename: string
+        attachment: string
     }
 
-    type ToMediaFunc = (val:string)=>string;
+    type ToMediaFunc = (val: string) => string;
 
     namespace YEasyFormTypes {
         interface OptsItemType {
@@ -47,12 +48,21 @@ declare global {
             placeholder?: string;
             required?: boolean;
 
+            defaultHide?: boolean;//默认隐藏
+            showCond?: (editForm: AnyObject) => boolean;
+
             uploadImageOption?: UploadImageOption;
+            radioOpts?: RadioOptsItem[];
         }
 
         interface UploadImageOption {
             toMediaFunc: ToMediaFunc
-            actionFunc: ()=>Promise<AttachResult>
+            actionFunc: () => Promise<AttachResult>
+        }
+
+        interface RadioOptsItem {
+            text: string,
+            value: number
         }
     }
 }
