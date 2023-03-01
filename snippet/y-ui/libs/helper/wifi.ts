@@ -5,7 +5,7 @@ const connect = (account: string, password: string): Promise<any> => {
             wx.onWifiConnectedWithPartialInfo((res) => {
                 res.wifi.SSID = trimSSIDStr(res.wifi.SSID);
                 if (res.wifi.SSID == account) {
-                    resolve("连接成功")
+                    resolve("连接成功 listener")
                     return
                 }
                 reject("当前连接Wi-Fi为：" + res.wifi.SSID)
@@ -20,7 +20,29 @@ const connect = (account: string, password: string): Promise<any> => {
                 success: (e) => {
                     if (e.errMsg != "connectWifi:ok") {
                         reject(e.errMsg);
+                        return;
                     }
+                    let eachNum = 0;
+                    const eachConnectedDose = ()=>{
+                        if (eachNum < 4){
+                            setTimeout(()=>{
+                                eachConnected();
+                                eachNum++;
+                            },500)
+                        }
+                    }
+                    const eachConnected = ()=>{
+                        getConnectWifiSSID().then(res=>{
+                            if (res == account){
+                                resolve("连接成功 each");
+                                return
+                            }
+                            eachConnectedDose();
+                        }).catch(()=>{
+                            eachConnectedDose();
+                        })
+                    }
+                    eachConnected();
                 },
                 fail: (err) => {
                     reject(errorCodeParse(err));
