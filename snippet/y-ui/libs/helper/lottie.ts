@@ -9,8 +9,8 @@ function load(el: string,url:string, opt: LottieLoadOpts = {
     // LoadAnimationReturnType
     return new Promise<LoadAnimationReturnType>(resolve => {
         uni.createSelectorQuery().in(getCurrentInstance()).select(el).node(res => {
-            const canvas = res.node
-            const context = canvas.getContext('2d')
+            const canvas = res.node;
+            const context = canvas.getContext('2d');
             lottie.setup(canvas);
             resolve(lottie.loadAnimation({
                 loop: opt.loop,

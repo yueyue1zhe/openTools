@@ -5,7 +5,7 @@
       :style="useStyle"
       :class="yClass"
       :mode="props.mode"
-      show-menu-by-longpress
+      :show-menu-by-longpress="showMenuByLongpress"
       :draggable="false"
       style="display: flex"
   ></image>
@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<{
   mode?: "scaleToFill" | "aspectFit" | "aspectFill" | "widthFix" | "heightFix",
   width?: string | number,
   height?: string | number,
+  showMenuByLongpress?: boolean
 }>(), {
   src: "",
   yStyle: "max-width:100%;",
@@ -30,16 +31,17 @@ const props = withDefaults(defineProps<{
   mode: "scaleToFill",
   width: "",
   height: "",
+  showMenuByLongpress: false,
 })
 
-const useStyle = computed(()=>{
-  return props.yStyle + widthHeightAppendStyle(props.width,props.height);
+const useStyle = computed(() => {
+  return props.yStyle + widthHeightAppendStyle(props.width, props.height);
 })
 const emit = defineEmits<{
-  (e:"click"):void
+  (e: "click"): void
 }>()
-const clickThis = ()=>{
-  uni.$y.throttle(()=>{
+const clickThis = () => {
+  uni.$y.throttle(() => {
     emit("click")
   })
 }

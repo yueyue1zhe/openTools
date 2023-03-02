@@ -28,7 +28,7 @@ const useSize = computed(() => {
   let outStyle = ";";
   const useMinHeight = uni.$y.addUnit(props.minHeight);
   if (useMinHeight) outStyle += `min-height:${useMinHeight};`
-  return outStyle + widthHeightAppendStyle(props.width,props.height);
+  return outStyle + widthHeightAppendStyle(props.width, props.height);
 })
 
 const useStyle = computed((): string => {
