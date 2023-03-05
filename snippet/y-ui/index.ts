@@ -2,7 +2,7 @@ import {toast, toastFastModal} from "./libs/function/toast";
 import route from "./libs/function/route";
 import toMedia from "./libs/helper/toMedia";
 import request from "./libs/request";
-import getLaunchQuery from "./libs/helper/getLaunchQuery";
+import {getLaunchOpt,parseQueryScene} from "./libs/helper/getLaunchOpt";
 import queryParams from "./libs/function/queryParams";
 import getCurRoute from "./libs/helper/getCurRoute";
 import wifi from "./libs/helper/wifi";
@@ -29,7 +29,8 @@ const $y = {
 
     imgUtil,
     toMedia,
-    getLaunchQuery,
+    getLaunchOpt,
+    parseQueryScene,
     getCurRoute,
     wifi,
     MpAd,
