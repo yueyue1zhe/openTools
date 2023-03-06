@@ -26,11 +26,11 @@
             <template
               v-if="item.type === YPopupEasyFormItemTypeState.text.value"
             >
-              <el-input
-                v-model="out[item.name]"
+              <easy-form-input
+                :opt="item"
+                v-model="out"
                 :placeholder="showPlaceholder(item)"
-                autocomplete="off"
-              />
+              ></easy-form-input>
             </template>
             <template
               v-if="item.type === YPopupEasyFormItemTypeState.number.value"
@@ -46,6 +46,9 @@
               v-if="item.type === YPopupEasyFormItemTypeState.switch.value"
             >
               <el-switch v-model="out[item.name]"></el-switch>
+              <span v-if="item.placeholder" class="y-desc y-m-l-5">{{
+                item.placeholder
+              }}</span>
             </template>
             <template
               v-if="item.type === YPopupEasyFormItemTypeState.radio.value"
@@ -77,6 +80,8 @@ import { computed, reactive } from "vue";
 import { YPopupEasyFormItemTypeState } from "@/components/yueyue-ui/y-form/yPopupEasyFormState";
 import YUploadImage from "@/components/yueyue-ui/y-file-upload/YUploadImage.vue";
 import { ElMessage } from "element-plus";
+import EasyFormInput from "@/components/yueyue-ui/y-form/easyFormInput.vue";
+import { easyFormGetProperty } from "@/components/yueyue-ui/y-form/easyFormTools";
 
 interface propsTypes {
   title?: string;
@@ -146,7 +151,11 @@ const optsCheck = () => {
     props.opts.forEach((item) => {
       const isShow =
         !item.showCond || (item.showCond && item.showCond(out.value));
-      if (isShow && item.required && !out.value[item.name]) {
+      if (
+        isShow &&
+        item.required &&
+        !easyFormGetProperty(out.value, item.name)
+      ) {
         const msg = showPlaceholder(item);
         ElMessage.error(msg);
         reject(msg);

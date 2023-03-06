@@ -1,6 +1,7 @@
 namespace YPopupEasyFormTypes {
   interface OptsItemType {
     name: string;
+    nameDeep?: boolean; //适用于嵌套对象
     type: number;
     label?: string;
     placeholder?: string;

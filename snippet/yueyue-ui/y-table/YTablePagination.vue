@@ -17,9 +17,7 @@ import { computed, reactive, watch } from "vue";
 
 const prop = withDefaults(
   defineProps<{
-    total: number;
-    page: number;
-    size: number;
+    opt: Omit<PageResult<AnyObject>, "list">;
   }>(),
   {}
 );
@@ -29,7 +27,7 @@ let state = reactive({
   total: 0,
 });
 watch(
-  () => prop,
+  () => prop.opt,
   (item) => {
     if (item.page != state.pageIndex) state.pageIndex = item.page;
     if (item.size != state.pageSize) state.pageSize = item.size;
@@ -56,7 +54,7 @@ const emit = defineEmits<{
 }>();
 
 const padding = computed(() => {
-  return prop.total > prop.size ? "13px 15px" : "";
+  return prop.opt.total > prop.opt.size ? "13px 15px" : "";
 });
 </script>
 
