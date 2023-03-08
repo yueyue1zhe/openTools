@@ -1,25 +1,37 @@
-namespace YPopupEasyFormTypes {
-  interface OptsItemType {
-    name: string;
-    nameDeep?: boolean; //适用于嵌套对象
-    type: number;
-    label?: string;
-    placeholder?: string;
-    required?: boolean;
+interface AnyObject {
+    [key: string]: any; // eslint-disable-line
+}
 
-    powerSortOpts?: {
-      powerName: string;
-      sortName: string;
-    };
+/*
+引用json
+tsconfig.json 中 resolveJsonModule 应配置为 true
+ */
+declare module "*.json" {
+    const value: any; // eslint-disable-line
+  export default value;
+}
 
-    defaultHide?: boolean; //默认隐藏
-    showCond?: (editForm: AnyObject) => boolean;
+interface PageResult<T> {
+  list: T[];
+  page: number;
+  total: number;
+  size: number;
+}
 
-    radioOpts?: {
-      [key: string]: {
-        value: number | string;
-        label: string;
-      };
-    };
-  }
+type VoidCallBack<T = any> = (res?: T) => void;
+
+interface ApiToken {
+  data: string;
+  time: number;
+}
+
+interface BusinessEnum {
+  [key: string]: {
+    value: number;
+    label: string;
+  };
+}
+
+interface HTMLLinkElement {
+  rel: string;
 }

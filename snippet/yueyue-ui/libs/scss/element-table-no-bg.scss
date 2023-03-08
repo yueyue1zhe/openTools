@@ -1,0 +1,11 @@
+:deep(.custom-table-header) {
+  background-color: var(--color-bg-1) !important;
+}
+
+:deep(.custom-table-cell) {
+  background-color: var(--color-bg-1);
+}
+
+:deep(.el-table__empty-block) {
+  background-color: var(--color-bg-1);
+}

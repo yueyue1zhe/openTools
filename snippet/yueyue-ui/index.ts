@@ -1,6 +1,6 @@
 import { App } from "vue";
-import YIcon from "@/components/yueyue-ui/y-icon";
-import YEditor from "@/components/yueyue-ui/y-editor";
+import YIcon from "@/components/yueyue-ui/components/yl-icon";
+import YEditor from "@/components/yueyue-ui/components/yl-editor";
 
 export default {
   install: (app: App) => {
