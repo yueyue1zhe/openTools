@@ -2,91 +2,89 @@
   <div v-if="showInput" class="w100">
     <div class="flex-def">
       <el-input
-        :placeholder="props.placeholder"
-        :value="modelValue"
-        @change="(e:string)=>!e?out = '':''"
+          :placeholder="props.placeholder"
+          :value="modelValue"
+          @change="(e:string)=>!e?out = '':''"
       ></el-input>
       <el-button class="y-m-l-10" @click="chooseStart">选择图片</el-button>
     </div>
     <el-image
-      v-if="modelValue"
-      :src="toMediaModelValue"
-      :preview-src-list="[toMediaModelValue]"
-      :hide-on-click-modal="true"
-      fit="contain"
-      class="image-slot"
+        v-if="modelValue"
+        :src="toMediaModelValue"
+        :preview-src-list="[toMediaModelValue]"
+        :hide-on-click-modal="true"
+        fit="contain"
+        class="image-slot"
     ></el-image>
     <div v-else class="image-slot">
       <y-icon name="el-icon-Picture" size="40"></y-icon>
     </div>
   </div>
   <el-dialog
-    v-model="state.popupShow"
-    destroy-on-close
-    :show-close="false"
-    width="60rem"
-    class="custom-dialog"
+      v-model="state.popupShow"
+      destroy-on-close
+      :show-close="false"
+      width="60rem"
+      class="custom-dialog"
   >
     <template #header>
       <div class="custom-dialog-header">
         <div class="y-section-title">选择图片</div>
         <el-upload
-          ref="refElUploader"
-          :action="elUploadActionUrl"
-          :headers="elUploadHeaders"
-          :data="elUploadData"
-          name="file"
-          :show-file-list="false"
-          accept="image/jpg,image/jpeg,image/png,image/ico,image/svg,image/bmp,image/gif"
-          :on-success="elUploadSuccess"
-          :on-error="elUploadError"
-          :on-progress="elUploadProgress"
-          multiple
+            ref="refElUploader"
+            :action="elUploadActionUrl"
+            :headers="elUploadHeaders"
+            :data="elUploadData"
+            name="file"
+            :show-file-list="false"
+            accept="image/jpg,image/jpeg,image/png,image/ico,image/svg,image/bmp,image/gif"
+            :on-success="elUploadSuccess"
+            :on-error="elUploadError"
+            :on-progress="elUploadProgress"
+            multiple
         >
           <el-button type="primary">点击上传</el-button>
         </el-upload>
       </div>
       <div v-show="state.progressShow" class="y-upload-progress">
         <el-progress
-          :stroke-width="3"
-          indeterminate
-          stroke-linecap="square"
-          :percentage="state.progressPercent"
-          :show-text="false"
+            :stroke-width="3"
+            indeterminate
+            stroke-linecap="square"
+            :percentage="state.progressPercent"
+            :show-text="false"
         />
       </div>
     </template>
     <el-container class="y-body">
       <image-body-aside
-        ref="refAside"
-        @tab-change="groupChange"
-        @group-load="groupLoad"
+          ref="refAside"
+          @tab-change="groupChange"
+          @group-load="groupLoad"
       ></image-body-aside>
       <image-body-list
-        ref="refBody"
-        :group="state.group"
-        :group_id="state.groupId"
-        @choose="imageBodyListChoose"
+          ref="refBody"
+          :group="state.group"
+          :group_id="state.groupId"
+          @choose="imageBodyListChoose"
       ></image-body-list>
     </el-container>
   </el-dialog>
 </template>
 
 <script lang="ts" setup>
-import { GetBaseUrl } from "../../libs/request/common";
-import { useUserStore } from "@/stores/user";
+import {GetBaseUrl} from "../../libs/request/common";
+import {useUserStore} from "@/stores/user";
 import config from "@/config";
-import { computed, nextTick, reactive, ref } from "vue";
+import {computed, nextTick, reactive, ref} from "vue";
 import YIcon from "@/components/yueyue-ui/components/yl-icon/YlIcon.vue";
 import ImageBodyAside from "@/components/yueyue-ui/components/yl-file-upload/image-upload/imageBodyAside.vue";
 import ImageBodyList from "@/components/yueyue-ui/components/yl-file-upload/image-upload/imageBodyList.vue";
-import type {
-  groupListItemType,
-  imageListItemType,
-} from "@/components/yueyue-ui/components/yl-file-upload/types";
-import type { UploadProps } from "element-plus";
-import { ElMessage, ElUpload } from "element-plus";
-import { ToMedia } from "@/components/yueyue-ui/libs/function/common";
+import type {groupListItemType, imageListItemType,} from "@/components/yueyue-ui/components/yl-file-upload/types";
+import type {UploadProps} from "element-plus";
+import {ElMessage, ElUpload} from "element-plus";
+import {ToMedia} from "@/components/yueyue-ui/libs/function/common";
+import {YResponseDataType} from "@/components/yueyue-ui/libs/request/types";
 
 const elUploadActionUrl = GetBaseUrl() + "/admin/attach/upload";
 let userStore = useUserStore();
@@ -141,7 +139,7 @@ const chooseStart = (cb?: VoidCallBack<string>) => {
   });
 };
 
-defineExpose({ chooseStart });
+defineExpose({chooseStart});
 
 interface YUploadImageProps {
   full?: boolean;

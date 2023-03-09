@@ -4,6 +4,7 @@ import { useUserStore } from "@/stores/user";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { loading } from "@/components/yueyue-ui/libs/function/loading";
+import W7helper from "@/components/yueyue-ui/libs/helper/W7helper";
 
 export function UseRouterPush(path: string) {
   if (window.microApp) {
@@ -37,7 +38,7 @@ export function routerSafe(
 
     //页面登录状态维护
     const userStore = useUserStore();
-    if (window.microApp && window.microApp.getData) {
+    if (W7helper.CanUse()) {
       await userStore.IsLogin();
     } else {
       if (!to.name || !ignore.includes(to.name.toString())) {
