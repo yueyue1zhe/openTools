@@ -15,9 +15,6 @@ func StructToMap(raw any) map[string]any {
 	for i := 0; i < objT.NumField(); i++ {
 		if name, ok := objT.Field(i).Tag.Lookup("json"); ok {
 			data[name] = objV.Field(i).Interface()
-		} else {
-			fmt.Println(objT.Field(i))
-			fmt.Println(objV.Field(i))
 		}
 	}
 	return data

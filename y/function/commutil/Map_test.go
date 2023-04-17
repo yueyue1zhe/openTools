@@ -3,6 +3,7 @@ package commutil
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestMapToQuery(t *testing.T) {
@@ -19,4 +20,10 @@ func TestMapToQuery(t *testing.T) {
 func TestTokenKey(t *testing.T) {
 	fmt.Println(StringRandom(32))
 	fmt.Println(StringRandom(43))
+}
+
+func TestTime(t *testing.T) {
+	a := time.Now()
+	fmt.Println(a.Add(60 * time.Hour))
+	fmt.Println(a)
 }

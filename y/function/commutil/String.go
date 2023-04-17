@@ -20,10 +20,12 @@ func StringLenLimit(judge string, min, max int) error {
 	return nil
 }
 
+const StringRandomRaw = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXY"
+const NumRandomRaw = "0123456789"
+
 // StringRandom 生成随机字符串
 func StringRandom(len int) string {
-	var str = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXY"
-	return StringRandomUseRaw(len, str)
+	return StringRandomUseRaw(len, StringRandomRaw)
 }
 
 // StringRandomUseRaw 使用指定字符生成随机字符串
@@ -77,6 +79,15 @@ func StringToUint(str string) (uint, error) {
 		return 0, err
 	}
 	return uint(out), nil
+}
+
+// StringToFloat64 字符串转float 64
+func StringToFloat64(str string) float64 {
+	out, _ := strconv.ParseFloat(str, 64)
+	return out
+}
+func Float64ToString(f float64) string {
+	return strconv.FormatFloat(f, byte('f'), 2, 64)
 }
 
 // StringToInt64 字符串转int 64
