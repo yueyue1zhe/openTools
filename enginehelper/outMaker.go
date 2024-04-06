@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"e.coding.net/zhechat/magic/taihao/function/commutil"
 	"e.coding.net/zhechat/magic/taihao/function/fileutil"
+	"e.coding.net/zhechat/magic/taihao/library/logutil"
 	"e.coding.net/zhechat/magic/taihao/library/qrcodeutil"
 	"fmt"
 	"github.com/nfnt/resize"
@@ -84,11 +85,12 @@ func (o *OutMaker) BottomDraw(txt, qrcode string) error {
 	}
 	tBrush.FontSize = fontSize
 
-	//useContent, err := tBrush.TruncateStringWithFreetype(txt, width-height-margin-fontSize)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//}
-	tBrush.DrawFontOnRGBA(bg, image.Pt(margin*2, margin*2), txt)
+	useContent, err := tBrush.TruncateStringWithFreetype(txt, width-height-margin-fontSize)
+	if err != nil {
+		logutil.Error("文本异常 %v", err.Error())
+		useContent = txt
+	}
+	tBrush.DrawFontOnRGBA(bg, image.Pt(margin*2, margin*2), useContent)
 
 	tBrush.FontSize = descFontSize
 	tBrush.FontColor = image.NewUniform(commutil.Hex2rgb("#909399"))
