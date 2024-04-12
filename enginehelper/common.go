@@ -4,11 +4,10 @@ import (
 	"d-photo/app"
 	"d-photo/env"
 	"e.coding.net/zhechat/magic/taihao/core"
-	"e.coding.net/zhechat/magic/taihao/library/logutil"
 )
 
 func withDb() {
-	logutil.Init()
+	logutil
 	conf := env.GetConf()
 	appConf := core.Conf{
 		Name:                  env.AppName,
